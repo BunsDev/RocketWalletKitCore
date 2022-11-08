@@ -478,6 +478,15 @@ cryptoSystemRemNetwork (BRCryptoSystem system,
     }
 }
 
+private_extern void
+cryptoSystemStartSync (BRCryptoSystem system,
+                              BRCryptoWalletManager manager) {
+    cryptoListenerGenerateSystemEvent (system->listener, system, (BRCryptoSystemEvent) {
+        CRYPTO_SYSTEM_EVENT_MANAGER_ADDED,
+        { .manager = cryptoWalletManagerTake (manager) }
+    });
+}
+
 // MARK: - System Wallet Managers
 
 static BRCryptoBoolean
@@ -591,6 +600,12 @@ cryptoSystemCreateWalletManager (BRCryptoSystem system,
     cryptoWalletManagerStart (manager);
 
     return manager;
+}
+
+extern void cryptoSystemCreateSync (BRCryptoSystem system,
+                                    BRCryptoWalletManager manager) {
+    cryptoSystemStartSync (system,
+                            manager);
 }
 
 // MARK: - Currency
