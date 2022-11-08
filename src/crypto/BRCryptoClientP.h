@@ -371,10 +371,16 @@ extern void
 cryptoClientQRYManagerConnect (BRCryptoClientQRYManager qry);
 
 extern void
+cryptoClientQRYManagerSubscribe (BRCryptoClientQRYManager qry);
+
+extern void
 cryptoClientQRYManagerDisconnect (BRCryptoClientQRYManager qry);
 
 extern void
 cryptoClientQRYManagerTickTock (BRCryptoClientQRYManager qry);
+
+extern void
+cryptoClientQRYManagerTickTockSubscribe (BRCryptoClientQRYManager qry);
 
 extern void
 cryptoClientQRYEstimateTransferFee (BRCryptoClientQRYManager qry,
