@@ -763,6 +763,7 @@ cryptoWalletManagerConnect (BRCryptoWalletManager cwm,
         }
             
         case CRYPTO_WALLET_MANAGER_STATE_CONNECTED:
+            cryptoClientQRYManagerSubscribe (cwm->qryManager);
             break;
 
         case CRYPTO_WALLET_MANAGER_STATE_SYNCING:

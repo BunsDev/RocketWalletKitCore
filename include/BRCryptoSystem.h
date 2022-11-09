@@ -96,6 +96,9 @@ cryptoSystemCreateWalletManager (BRCryptoSystem system,
                                  BRCryptoCurrency *currencies,
                                  size_t currenciesCount);
 
+extern void cryptoSystemCreateSync (BRCryptoSystem system,
+                                    BRCryptoWalletManager manager);
+
 extern void
 cryptoSystemStart (BRCryptoSystem system);
 

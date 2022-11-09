@@ -150,6 +150,7 @@ cryptoClientP2PManagerSetNetworkReachable (BRCryptoClientP2PManager p2p,
 // MARK: Client QRY (QueRY)
 
 static void cryptoClientQRYRequestBlockNumber  (BRCryptoClientQRYManager qry);
+static void cryptoClientQRYRequestBlockNumberSubscribe  (BRCryptoClientQRYManager qry);
 static bool cryptoClientQRYRequestTransactionsOrTransfers (BRCryptoClientQRYManager qry,
                                                            BRCryptoClientCallbackType type,
                                                            OwnershipKept  BRSetOf(BRCryptoAddress) oldAddresses,
@@ -214,6 +215,17 @@ cryptoClientQRYManagerConnect (BRCryptoClientQRYManager qry) {
 
     // Start a sync immediately.
     cryptoClientQRYManagerTickTock (qry);
+}
+
+extern void
+cryptoClientQRYManagerSubscribe (BRCryptoClientQRYManager qry) { // ADDED
+    pthread_mutex_lock (&qry->lock);
+    qry->connected = true;
+    cryptoWalletManagerSetState (qry->manager, cryptoWalletManagerStateInit (CRYPTO_WALLET_MANAGER_STATE_SYNCING));
+    pthread_mutex_unlock (&qry->lock);
+
+    // Start a sync immediately.
+    cryptoClientQRYManagerTickTockSubscribe (qry);
 }
 
 extern void
@@ -329,6 +341,29 @@ cryptoClientQRYManagerTickTock (BRCryptoClientQRYManager qry) {
     pthread_mutex_unlock (&qry->lock);
 }
 
+extern void
+cryptoClientQRYManagerTickTockSubscribe (BRCryptoClientQRYManager qry) { // ADDED
+    pthread_mutex_lock (&qry->lock);
+
+    // Only continue if connected
+    if (qry->connected) {
+        switch (qry->manager->syncMode) {
+            case CRYPTO_SYNC_MODE_API_ONLY:
+            case CRYPTO_SYNC_MODE_API_WITH_P2P_SEND:
+                // Alwwys get the current block
+                cryptoClientQRYRequestBlockNumberSubscribe (qry);
+                break;
+
+            case CRYPTO_SYNC_MODE_P2P_WITH_API_SYNC:
+            case CRYPTO_SYNC_MODE_P2P_ONLY:
+                break;
+        }
+    }
+
+    pthread_mutex_unlock (&qry->lock);
+}
+
+
 static void
 cryptoClientQRYRequestSync (BRCryptoClientQRYManager qry, bool needLock) {
     if (needLock) pthread_mutex_lock (&qry->lock);
@@ -362,6 +397,64 @@ cryptoClientQRYRequestSync (BRCryptoClientQRYManager qry, bool needLock) {
         // Get the addresses for the manager's wallet
         BRCryptoWallet wallet = cryptoWalletManagerGetWallet (qry->manager);
         BRSetOf(BRCryptoAddress) addresses = cryptoWalletGetAddressesForRecovery (wallet);
+        assert (0 != BRSetCount(addresses));
+
+        // We'll force the 'client' to return all transactions w/o regard to the `endBlockNumber`
+        // Doing this ensures that the initial 'full-sync' returns everything.  Thus there is no
+        // need to wait for a future 'tick tock' to get the recent and pending transactions'.  For
+        // BTC the future 'tick tock' is minutes away; which is a burden on Users as they wait.
+
+        cryptoClientQRYRequestTransactionsOrTransfers (qry,
+                                                       (CRYPTO_CLIENT_REQUEST_USE_TRANSFERS == qry->byType
+                                                        ? CLIENT_CALLBACK_REQUEST_TRANSFERS
+                                                        : CLIENT_CALLBACK_REQUEST_TRANSACTIONS),
+                                                       NULL,
+                                                       addresses,
+                                                       qry->sync.rid);
+
+        cryptoWalletGive (wallet);
+    }
+
+    if (needLock) pthread_mutex_unlock (&qry->lock);
+}
+
+static void
+cryptoClientQRYRequestSyncSubscribe (BRCryptoClientQRYManager qry, bool needLock) {
+    if (needLock) pthread_mutex_lock (&qry->lock);
+
+    // If we've successfully completed a sync then update `begBlockNumber` which will always be
+    // `blockNumberOffset` prior to the `endBlockNumber`.  Using the offset, which is weeks prior,
+    // ensures that we don't miss a range of blocks in the {transfer,transaction} query.
+
+    if (qry->sync.completed && qry->sync.success) {
+
+        // Be careful to ensure that the `begBlockNumber` is not negative.
+        qry->sync.begBlockNumber = (qry->sync.endBlockNumber >= qry->blockNumberOffset
+                                    ? qry->sync.endBlockNumber - qry->blockNumberOffset
+                                    : 0);
+    }
+
+    // Whether or not we completed , update the `endBlockNumber` to the current block height.
+    qry->sync.endBlockNumber = MAX (cryptoClientQRYGetNetworkBlockHeight (qry),
+                                    qry->sync.begBlockNumber);
+
+    // We'll update transactions if there are more blocks to examine and if the prior sync
+    // completed (successfully or not).
+    if (qry->sync.completed && qry->sync.begBlockNumber != qry->sync.endBlockNumber) {
+
+        // Save the current requestId and mark the sync as completed successfully.
+        qry->sync.rid = qry->requestId++;
+
+        // Mark the sync as completed, unsucessfully (the initial state)
+        cryptoClientQRYManagerUpdateSync (qry, false, false, false);
+
+        // Get the addresses for the manager's wallet
+        BRCryptoWallet wallet = cryptoWalletManagerGetWallet (qry->manager);
+//        BRSetOf(BRCryptoAddress) addresses = cryptoWalletGetAddressesForRecovery (wallet);
+        BRCryptoAddress address = cryptoWalletGetAddress (wallet, qry->manager->addressScheme);
+        BRSetOf(BRCryptoAddress) addresses = cryptoAddressSetCreate (1);
+        BRSetAdd (addresses, address);
+//        printf("address = %s\n", cryptoAddressAsString(address));
         assert (0 != BRSetCount(addresses));
 
         // We'll force the 'client' to return all transactions w/o regard to the `endBlockNumber`
@@ -521,9 +614,52 @@ cryptoClientHandleBlockNumber (OwnershipKept BRCryptoWalletManager cwm,
 }
 
 static void
+cryptoClientHandleBlockNumberSubscribe (OwnershipKept BRCryptoWalletManager cwm,
+                               OwnershipGiven BRCryptoClientCallbackState callbackState,
+                               BRCryptoBoolean success,
+                               BRCryptoBlockNumber blockNumber,
+                               char *blockHashString) {
+
+    BRCryptoBlockNumber oldBlockNumber = cryptoNetworkGetHeight (cwm->network);
+
+    if (oldBlockNumber != blockNumber) {
+        cryptoNetworkSetHeight (cwm->network, blockNumber);
+
+        if (NULL != blockHashString && '\0' != blockHashString[0]) {
+            BRCryptoHash verifiedBlockHash = cryptoNetworkCreateHashFromString (cwm->network, blockHashString);
+            cryptoNetworkSetVerifiedBlockHash (cwm->network, verifiedBlockHash);
+            cryptoHashGive (verifiedBlockHash);
+        }
+
+        cryptoWalletManagerGenerateEvent (cwm, (BRCryptoWalletManagerEvent) {
+            CRYPTO_WALLET_MANAGER_EVENT_BLOCK_HEIGHT_UPDATED,
+            { .blockHeight = blockNumber }
+        });
+    }
+
+    cryptoClientCallbackStateRelease (callbackState);
+    cryptoMemoryFree(blockHashString);
+
+    // After getting any block number, whether successful or not, do a sync.  The sync will be
+    // incremental or full - depending on where the last sync ended.
+    cryptoClientQRYRequestSyncSubscribe (cwm->qryManager, true);
+}
+
+
+static void
 cryptoClientAnnounceBlockNumberDispatcher (BREventHandler ignore,
                                            BRCryptoClientAnnounceBlockNumberEvent *event) {
     cryptoClientHandleBlockNumber (event->manager,
+                                   event->callbackState,
+                                   event->success,
+                                   event->blockNumber,
+                                   event->blockHashString);
+}
+
+static void
+cryptoClientSubscribeBlockNumberDispatcher (BREventHandler ignore,
+                                           BRCryptoClientAnnounceBlockNumberEvent *event) {
+    cryptoClientHandleBlockNumberSubscribe (event->manager,
                                    event->callbackState,
                                    event->success,
                                    event->blockNumber,
@@ -544,6 +680,13 @@ BREventType handleClientAnnounceBlockNumberEventType = {
     (BREventDestroyer)  cryptoClientAnnounceBlockNumberDestroyer
 };
 
+BREventType handleClientSubscribeBlockNumberEventType = {
+    "CWM: Handle Client Subscribe Block Number Event",
+    sizeof (BRCryptoClientAnnounceBlockNumberEvent),
+    (BREventDispatcher) cryptoClientSubscribeBlockNumberDispatcher,
+    (BREventDestroyer)  cryptoClientAnnounceBlockNumberDestroyer
+};
+
 extern void
 cryptoClientAnnounceBlockNumber (OwnershipKept BRCryptoWalletManager cwm,
                                OwnershipGiven BRCryptoClientCallbackState callbackState,
@@ -552,6 +695,23 @@ cryptoClientAnnounceBlockNumber (OwnershipKept BRCryptoWalletManager cwm,
                                const char *blockHashString) {
     BRCryptoClientAnnounceBlockNumberEvent event =
     { { NULL, &handleClientAnnounceBlockNumberEventType },
+        cryptoWalletManagerTakeWeak(cwm),
+        callbackState,
+        success,
+        blockNumber,
+        (NULL == blockHashString ? NULL : strdup (blockHashString)) };
+
+    eventHandlerSignalEvent (cwm->handler, (BREvent *) &event);
+}
+
+extern void
+cryptoClientSubscribeBlockNumber (OwnershipKept BRCryptoWalletManager cwm,
+                               OwnershipGiven BRCryptoClientCallbackState callbackState,
+                               BRCryptoBoolean success,
+                               BRCryptoBlockNumber blockNumber,
+                               const char *blockHashString) { // ADDED
+    BRCryptoClientAnnounceBlockNumberEvent event =
+    { { NULL, &handleClientSubscribeBlockNumberEventType },
         cryptoWalletManagerTakeWeak(cwm),
         callbackState,
         success,
@@ -571,6 +731,22 @@ cryptoClientQRYRequestBlockNumber (BRCryptoClientQRYManager qry) {
                                                                                  qry->requestId++);
 
     qry->client.funcGetBlockNumber (qry->client.context,
+                                    cryptoWalletManagerTake (cwm),
+                                    callbackState);
+
+    cryptoWalletManagerGive (cwm);
+}
+
+static void
+cryptoClientQRYRequestBlockNumberSubscribe (BRCryptoClientQRYManager qry) { // ADDED
+    // Extract CWM, checking to make sure it still lives
+    BRCryptoWalletManager cwm = cryptoWalletManagerTakeWeak(qry->manager);
+    if (NULL == cwm) return;
+
+    BRCryptoClientCallbackState callbackState = cryptoClientCallbackStateCreate (CLIENT_CALLBACK_REQUEST_BLOCK_NUMBER,
+                                                                                 qry->requestId++);
+
+    qry->client.funcGetBlockNumberSubscribe (qry->client.context,
                                     cryptoWalletManagerTake (cwm),
                                     callbackState);
 

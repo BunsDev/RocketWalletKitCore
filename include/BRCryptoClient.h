@@ -36,6 +36,13 @@ cryptoClientAnnounceBlockNumber (OwnershipKept BRCryptoWalletManager cwm,
                                BRCryptoBlockNumber blockNumber,
                                const char *verifiedBlockHash);
 
+extern void
+cryptoClientSubscribeBlockNumber (OwnershipKept BRCryptoWalletManager cwm,
+                               OwnershipGiven BRCryptoClientCallbackState callbackState,
+                               BRCryptoBoolean success,
+                               BRCryptoBlockNumber blockNumber,
+                               const char *verifiedBlockHash);
+
 // MARK: - Get Transactions
 
 typedef void
@@ -191,6 +198,7 @@ cryptoClientAnnounceCurrencies (BRCryptoSystem system,
 typedef struct {
     BRCryptoClientContext context;
     BRCryptoClientGetBlockNumberCallback  funcGetBlockNumber;
+    BRCryptoClientGetBlockNumberCallback  funcGetBlockNumberSubscribe;
     BRCryptoClientGetTransactionsCallback funcGetTransactions;
     BRCryptoClientGetTransfersCallback funcGetTransfers;
     BRCryptoClientSubmitTransactionCallback funcSubmitTransaction;
