@@ -170,6 +170,14 @@ cryptoWalletManagerEstimateFeeBasisBTC (BRCryptoWalletManager cwm,
     assert(CRYPTO_FALSE == overflow);
 
     uint64_t btcFee = (0 == btcAmount ? 0 : BRWalletFeeForTxAmountWithFeePerKb (btcWallet, btcFeePerKB, btcAmount));
+    
+    uint64_t sizeInByte = (uint64_t) btcFee / btcFeePerKB * 1000;
+    uint64_t feeMinimum = 5 * sizeInByte; // 5 satoshi  per vbyte minimum
+    
+    if(btcFee < feeMinimum) {
+        btcFee = feeMinimum;
+        btcFeePerKB = 5000;
+    }
 
     return cryptoFeeBasisCreateAsBTC (wallet->unitForFee, btcFee, btcFeePerKB, CRYPTO_FEE_BASIS_BTC_SIZE_UNKNOWN);
 }
