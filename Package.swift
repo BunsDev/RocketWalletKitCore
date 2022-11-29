@@ -128,12 +128,7 @@ let package = Package(
             dependencies: [],
             path: "vendor/blake2",
             exclude: [],
-            publicHeadersPath: nil,
-            cSettings: [
-                .unsafeFlags([
-                    "-Xclang", "-analyzer-disable-all-checks"
-                ])
-            ]
+            publicHeadersPath: nil
         ),
 
         // MARK: - Core Misc Targets
