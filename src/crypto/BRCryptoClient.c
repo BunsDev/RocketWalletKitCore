@@ -1269,7 +1269,7 @@ typedef struct {
     BREvent base;
     BRCryptoWalletManager manager;
     BRCryptoClientCallbackState callbackState;
-    BRCryptoBoolean success;
+    BRCryptoStatus status;
     uint64_t costUnits;
     BRArrayOf(char*) keys;
     BRArrayOf(char*) vals;
@@ -1278,13 +1278,12 @@ typedef struct {
 static void
 cryptoClientHandleEstimateTransactionFee (OwnershipKept BRCryptoWalletManager manager,
                                           OwnershipGiven BRCryptoClientCallbackState callbackState,
-                                          BRCryptoBoolean success,
+                                          BRCryptoStatus status,
                                           uint64_t costUnits,
                                           BRArrayOf(char*) attributeKeys,
                                           BRArrayOf(char*) attributeVals) {
     assert (CLIENT_CALLBACK_ESTIMATE_TRANSACTION_FEE == callbackState->type);
 
-    BRCryptoStatus status = (CRYPTO_TRUE == success ? CRYPTO_SUCCESS : CRYPTO_ERROR_FAILED);
     BRCryptoCookie cookie = callbackState->u.estimateTransactionFee.cookie;
 
     BRCryptoNetworkFee networkFee = callbackState->u.estimateTransactionFee.networkFee;
@@ -1293,7 +1292,7 @@ cryptoClientHandleEstimateTransactionFee (OwnershipKept BRCryptoWalletManager ma
     BRCryptoAmount pricePerCostFactor = cryptoNetworkFeeGetPricePerCostFactor (networkFee);
     double costFactor = (double) costUnits;
     BRCryptoFeeBasis feeBasis = NULL;
-    if (CRYPTO_TRUE == success)
+    if (CRYPTO_SUCCESS == status)
         feeBasis = cryptoWalletManagerRecoverFeeBasisFromFeeEstimate (manager,
                                                                       networkFee,
                                                                       initialFeeBasis,
@@ -1314,7 +1313,7 @@ cryptoClientAnnounceEstimateTransactionFeeDispatcher (BREventHandler ignore,
                                       BRCryptoClientAnnounceEstimateTransactionFeeEvent *event) {
     cryptoClientHandleEstimateTransactionFee (event->manager,
                                               event->callbackState,
-                                              event->success,
+                                              event->status,
                                               event->costUnits,
                                               event->keys,
                                               event->vals);
@@ -1338,7 +1337,7 @@ BREventType handleClientAnnounceEstimateTransactionFeeEventType = {
 extern void
 cryptoClientAnnounceEstimateTransactionFee (OwnershipKept BRCryptoWalletManager manager,
                                             OwnershipGiven BRCryptoClientCallbackState callbackState,
-                                            BRCryptoBoolean success,
+                                            BRCryptoStatus status,
                                             uint64_t costUnits,
                                             size_t attributesCount,
                                             OwnershipKept const char **attributeKeys,
@@ -1360,7 +1359,7 @@ cryptoClientAnnounceEstimateTransactionFee (OwnershipKept BRCryptoWalletManager 
     { { NULL, &handleClientAnnounceEstimateTransactionFeeEventType },
         cryptoWalletManagerTakeWeak(manager),
         callbackState,
-        success,
+        status,
         costUnits,
         keys,
         vals };

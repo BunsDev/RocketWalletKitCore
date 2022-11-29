@@ -201,6 +201,7 @@ extern uint64_t BLOCK_HEIGHT_UNBOUND_VALUE;
         // specific error code does not make sense (you really should create
         // a specifc error code...).
         CRYPTO_ERROR_FAILED,
+        CRYPTO_ERROR_FUNDS, // Handles case for amount > balance
 
         // Reference access
         CRYPTO_ERROR_UNKNOWN_NODE = 10000,
