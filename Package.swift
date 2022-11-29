@@ -113,13 +113,7 @@ let package = Package(
             name: "WalletKitHederaProto",
             dependencies: [],
             path: "src/hedera/proto",
-            publicHeadersPath: nil,
-            cSettings: [
-                .unsafeFlags([
-                    "-Xclang", "-analyzer-disable-all-checks",
-                    "-Wno-shorten-64-to-32",
-                ])
-            ]
+            publicHeadersPath: nil
         ),
         
         // Custom compilation flags for blake2 - to silence warnings
