@@ -81,17 +81,7 @@ let package = Package(
             dependencies: [],
             path: "vendor/sqlite3",
             sources: ["sqlite3.c"],
-            publicHeadersPath: "include",
-            cSettings: [
-                .unsafeFlags([
-                    "-Xclang", "-analyzer-disable-all-checks",
-                    "-D_HAVE_SQLITE_CONFIG_H=1",
-                    "-Wno-ambiguous-macro",
-                    "-Wno-shorten-64-to-32",
-                    "-Wno-unreachable-code",
-                    "-Wno-#warnings"
-                ])
-            ]
+            publicHeadersPath: "include"
         ),
 
         // Custom compilation flags for ed15519 - to silence warnings
@@ -100,12 +90,7 @@ let package = Package(
             dependencies: [],
             path: "vendor/ed25519",
             exclude: [],
-            publicHeadersPath: nil,
-            cSettings: [
-                .unsafeFlags([
-                    "-Xclang", "-analyzer-disable-all-checks"
-                ])
-            ]
+            publicHeadersPath: nil
         ),
 
         // Custom compilation flags for hedera/proto - to silence warnings
