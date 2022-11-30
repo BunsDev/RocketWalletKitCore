@@ -159,7 +159,7 @@ typedef void
 extern void
 cryptoClientAnnounceEstimateTransactionFee (OwnershipKept BRCryptoWalletManager cwm,
                                             OwnershipGiven BRCryptoClientCallbackState callbackState,
-                                            BRCryptoBoolean success,
+                                            BRCryptoStatus status,
                                             uint64_t costUnits,
                                             size_t attributesCount,
                                             OwnershipKept const char **attributeKeys,

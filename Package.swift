@@ -69,7 +69,17 @@ let package = Package(
             dependencies: [],
             path: "vendor/sqlite3",
             sources: ["sqlite3.c"],
-            publicHeadersPath: "include"
+            publicHeadersPath: "include",
+            cSettings: [
+                .unsafeFlags([
+                    "-Xclang", "-analyzer-disable-all-checks",
+                    "-D_HAVE_SQLITE_CONFIG_H=1",
+                    "-Wno-ambiguous-macro",
+                    "-Wno-shorten-64-to-32",
+                    "-Wno-unreachable-code",
+                    "-Wno-#warnings"
+                ])
+            ]
         ),
 
         // Custom compilation flags for ed15519 - to silence warnings
