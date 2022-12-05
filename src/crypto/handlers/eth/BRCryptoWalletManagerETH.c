@@ -273,6 +273,8 @@ cryptoWalletManagerEstimateFeeBasisETH (BRCryptoWalletManager manager,
                                         size_t attributesCount,
                                         OwnershipKept BRCryptoTransferAttribute *attributes) {
     BRCryptoWalletETH walletETH = cryptoWalletCoerce (wallet);
+    
+    networkFee->pricePerCostFactor = networkFee->pricePerCostFactor + networkFee->pricePerCostFactor; // Double the pricePerCostFactor
 
     BREthereumFeeBasis ethFeeBasis = {
         FEE_BASIS_GAS,
