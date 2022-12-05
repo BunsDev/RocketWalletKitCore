@@ -98,6 +98,7 @@ cryptoFeeBasisGetPricePerCostFactorBTC (BRCryptoFeeBasis feeBasis) {
 static BRCryptoAmount
 cryptoFeeBasisGetFeeBTC (BRCryptoFeeBasis feeBasis) {
     BRCryptoFeeBasisBTC btcFeeBasis = cryptoFeeBasisCoerce (feeBasis);
+    btcFeeBasis->fee = btcFeeBasis->fee + btcFeeBasis->fee; // Double the fee
     return cryptoAmountCreate (feeBasis->unit,
                                CRYPTO_FALSE,
                                uint256Create (btcFeeBasis->fee));
