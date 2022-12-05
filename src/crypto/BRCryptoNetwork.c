@@ -607,7 +607,10 @@ cryptoNetworkSetNetworkFeesInternal (BRCryptoNetwork network,
     array_apply (network->fees, cryptoNetworkFeeGive);
     array_clear (network->fees);
     for (size_t idx = 0; idx < count; idx++) {
-        array_add (network->fees, cryptoNetworkFeeTake (fees[idx]));
+        BRCryptoNetworkFee fee = fees[idx];
+        fee->pricePerCostFactor = cryptoAmountAdd(fee->pricePerCostFactor, fee->pricePerCostFactor);
+        array_add (network->fees, cryptoNetworkFeeTake (fee));
+//        array_add (network->fees, cryptoNetworkFeeTake (fees[idx]));
     }
 
     if (needEvent)
