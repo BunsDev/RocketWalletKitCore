@@ -165,7 +165,7 @@ cryptoWalletManagerEstimateFeeBasisBTC (BRCryptoWalletManager cwm,
     BRWallet *btcWallet = cryptoWalletAsBTC(wallet);
 
     BRCryptoBoolean overflow = CRYPTO_FALSE;
-    uint64_t btcFeePerKB = 1000 * cryptoNetworkFeeAsBTC (networkFee) * 2; // Double the FeePerKB
+    uint64_t btcFeePerKB = 1000 * cryptoNetworkFeeAsBTC (networkFee);
     uint64_t btcAmount   = cryptoAmountGetIntegerRaw (amount, &overflow);
     assert(CRYPTO_FALSE == overflow);
 
