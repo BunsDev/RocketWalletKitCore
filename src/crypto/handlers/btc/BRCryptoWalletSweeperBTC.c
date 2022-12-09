@@ -116,6 +116,8 @@ cryptoWalletSweeperTransactionForSweepAsBTC (BRCryptoWalletManager manager,
     //            context to the caller.
     BRTransaction *transaction = NULL;
     BRWalletSweeperCreateTransaction (sweeper, wallet, feePerKb, &transaction);
+    
+    pthread_mutex_unlock (&manager->lock);
 
     return transaction;
 }
