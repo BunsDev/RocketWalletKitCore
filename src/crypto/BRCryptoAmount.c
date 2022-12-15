@@ -181,10 +181,8 @@ cryptoAmountAdd (BRCryptoAmount a1,
                  BRCryptoAmount a2) {
     assert (CRYPTO_TRUE == cryptoAmountIsCompatible (a1, a2));
     
-    int a1Overflow = 0;
-    int a2Overflow = 0;
-    double a1Double = cryptoAmountGetDouble (a1, a1->unit, a1Overflow);
-    double a2Double = cryptoAmountGetDouble (a1, a1->unit, a1Overflow);
+    double a1Double = cryptoAmountGetDouble (a1, a1->unit, &a1->isNegative);
+    double a2Double = cryptoAmountGetDouble (a2, a2->unit, &a2->isNegative);
 
     int overflow = 0;
     int negative = 0;
