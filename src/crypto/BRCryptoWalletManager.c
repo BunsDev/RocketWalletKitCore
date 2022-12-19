@@ -392,8 +392,8 @@ cryptoWalletManagerCreate (BRCryptoWalletManagerListener listener,
     if (NULL == manager) return NULL;
 
     // Recover transfers and transactions
-//    cryptoWalletManagerInitialTransferBundlesRecover (manager);
-//    cryptoWalletManagerInitialTransactionBundlesRecover (manager);
+    cryptoWalletManagerInitialTransferBundlesRecover (manager);
+    cryptoWalletManagerInitialTransactionBundlesRecover (manager);
 
     pthread_mutex_unlock (&manager->lock);
 
