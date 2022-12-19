@@ -152,7 +152,7 @@ cryptoTransferFindDirection (BREthereumAccount account,
         return CRYPTO_TRANSFER_RECEIVED;
     } else {
 //        assert(0);
-        return CRYPTO_TRANSFER_SENT; // handles case where fees paid by smart contract sender
+        return CRYPTO_TRANSFER_RECEIVED; // handles case where fees paid by smart contract sender
     }
 }
 
