@@ -151,7 +151,8 @@ cryptoTransferFindDirection (BREthereumAccount account,
     } else if (accountIsSource == ETHEREUM_BOOLEAN_FALSE && accountIsTarget == ETHEREUM_BOOLEAN_TRUE) {
         return CRYPTO_TRANSFER_RECEIVED;
     } else {
-        assert(0);
+//        assert(0);
+        return CRYPTO_TRANSFER_SENT; // handles case where fees paid by smart contract sender
     }
 }
 
