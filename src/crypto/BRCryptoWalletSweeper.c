@@ -12,6 +12,7 @@
 #include "BRCryptoWalletSweeperP.h"
 #include "BRCryptoHandlersP.h"
 
+#include <stdio.h>
 
 extern BRCryptoWalletSweeper
 cryptoWalletSweeperAllocAndInit (size_t sizeInBytes,
@@ -65,6 +66,11 @@ cryptoWalletManagerEstimateFeeBasisForWalletSweep (BRCryptoWalletSweeper sweeper
                                                                      cookie,
                                                                      sweeper,
                                                                      fee);
+    
+    BRCryptoAmount feeBasisAmount = feeBasis->handlers->getFee(feeBasis);
+    BRCryptoBoolean overflow = CRYPTO_FALSE;
+    double feeBasisDouble = cryptoAmountGetDouble (feeBasisAmount,wallet->unit,&overflow);
+    printf("feeBasisDouble = %.8f\n", feeBasisDouble);
     
     if (NULL != feeBasis)
         cryptoWalletGenerateEvent (wallet, cryptoWalletEventCreateFeeBasisEstimated (CRYPTO_SUCCESS, cookie, feeBasis));
