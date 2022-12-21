@@ -83,6 +83,11 @@ cryptoWalletSweeperCreateTransferForWalletSweep (BRCryptoWalletSweeper sweeper,
                                                  BRCryptoWalletManager cwm,
                                                  BRCryptoWallet wallet,
                                                  BRCryptoFeeBasis estimatedFeeBasis) {
+    BRCryptoAmount feeBasisAmount = estimatedFeeBasis->handlers->getFee(estimatedFeeBasis);
+    BRCryptoBoolean overflow = CRYPTO_FALSE;
+    double feeBasisDouble = cryptoAmountGetDouble (feeBasisAmount,wallet->unit,&overflow);
+    printf("feeBasisDouble = %.8f\n", feeBasisDouble);
+    
     BRCryptoTransfer transfer = sweeper->handlers->createTransfer (cwm, wallet, sweeper, estimatedFeeBasis);
     
     cryptoTransferGenerateEvent (transfer, (BRCryptoTransferEvent) {
