@@ -333,6 +333,8 @@ BRWalletSweeperBuildTransaction (BRCryptoWalletSweeperBTC sweeper,
         if (balanceAmountOut) *balanceAmountOut = 0;
         return CRYPTO_WALLET_SWEEPER_INSUFFICIENT_FUNDS;
     }
+    
+    txnSize = txnSize * 2; // Double the size
 
     uint64_t feeAmount = BRWalletSweeperCalculateFee(feePerKb, txnSize);
     uint64_t minAmount = BRWalletSweeperCalculateMinOutputAmount(feePerKb);
@@ -343,14 +345,6 @@ BRWalletSweeperBuildTransaction (BRCryptoWalletSweeperBTC sweeper,
         if (balanceAmountOut) *balanceAmountOut = 0;
         return CRYPTO_WALLET_SWEEPER_INSUFFICIENT_FUNDS;
     }
-    
-    BRWallet *btcWallet = cryptoWalletAsBTC(wallet);
-    BRCryptoBoolean overflow = CRYPTO_FALSE;
-    double amountDouble = (double) feeAmount/100;
-    BRCryptoAmount amount = cryptoAmountCreateDouble (amountDouble,sweeper->base.unit);
-    uint64_t btcAmount   = cryptoAmountGetIntegerRaw (amount, &overflow);
-
-    uint64_t btcFee = (0 == btcAmount ? 0 : BRWalletFeeForTxAmountWithFeePerKb (btcWallet, feePerKb, btcAmount));
 
     BRAddress addr = sweeper->isSegwit ? BRWalletReceiveAddress(wallet) : BRWalletLegacyAddress (wallet);
     BRTxOutput o = BR_TX_OUTPUT_NONE;
