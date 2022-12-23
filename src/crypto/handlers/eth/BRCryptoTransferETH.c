@@ -87,6 +87,8 @@ cryptoTransferCreateAsETH (BRCryptoTransferListener listener,
                            OwnershipGiven BREthereumTransaction originatingTransaction) {
     assert (NULL  == originatingTransaction ||
             nonce == transactionGetNonce (originatingTransaction));
+    
+    printf("%llu\n", nonce);
 
     BRCryptoTransferCreateContextETH contextETH = {
         hash,
