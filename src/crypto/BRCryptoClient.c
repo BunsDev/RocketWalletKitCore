@@ -1451,10 +1451,8 @@ cryptoClientTransferBundleCreate (BRCryptoTransferStateType status,
     bundle->attributeKeys = bundle->attributeVals = NULL;
 
     if (bundle->attributesCount > 0) {
-//        bundle->attributeKeys = calloc (bundle->attributesCount, sizeof (char*));
-        bundle->attributeKeys = calloc (bundle->attributesCount, sizeof (*(attributeKeys)));
-//        bundle->attributeVals = calloc (bundle->attributesCount, sizeof (char*));
-        bundle->attributeVals = calloc (bundle->attributesCount, sizeof (*(attributeVals)));
+        bundle->attributeKeys = calloc (bundle->attributesCount, sizeof (char*));
+        bundle->attributeVals = calloc (bundle->attributesCount, sizeof (char*));
         for (size_t index = 0; index < bundle->attributesCount; index++) {
             bundle->attributeKeys[index] = strdup (attributeKeys[index]);
             bundle->attributeVals[index] = strdup (attributeVals[index]);
