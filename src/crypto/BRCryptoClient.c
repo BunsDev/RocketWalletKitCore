@@ -929,8 +929,11 @@ cryptoClientHandleTransfers (OwnershipKept BRCryptoWalletManager manager,
             case CRYPTO_TRUE: {
                 size_t bundlesCount = array_count(bundles);
 
-                for (size_t index = 0; index < bundlesCount; index++)
+                for (size_t index = 0; index < bundlesCount; index++) {
+                    BRCryptoClientTransferBundle bundle = bundles[index];
+                    printf("%s\n", bundle->hash);
                     cryptoWalletManagerSaveTransferBundle(manager, bundles[index]);
+                }
 
                 // Sort bundles to have the lowest blocknumber first.  Use of `mergesort` is
                 // appropriate given that the bundles are likely already ordered.  This minimizes
