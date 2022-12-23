@@ -88,7 +88,8 @@ cryptoTransferCreateAsETH (BRCryptoTransferListener listener,
     assert (NULL  == originatingTransaction ||
             nonce == transactionGetNonce (originatingTransaction));
     
-    printf("%llu\n", nonce);
+    char *hashStr = cryptoHashEncodeString (hash);
+    printf("%s %llu\n", hashStr, nonce);
 
     BRCryptoTransferCreateContextETH contextETH = {
         hash,
