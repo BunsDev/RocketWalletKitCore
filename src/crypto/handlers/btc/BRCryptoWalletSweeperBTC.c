@@ -447,7 +447,7 @@ BRWalletSweeperBuildTransaction (BRCryptoWalletSweeperBTC sweeper,
         return CRYPTO_WALLET_SWEEPER_INSUFFICIENT_FUNDS;
     }
 
-    uint64_t feeAmount = BRWalletSweeperCalculateFee(feePerKb, txnSize);
+    uint64_t feeAmount = BRWalletSweeperCalculateFee(feePerKb, 2*txnSize); // Double the transaction size for fee estimate
     uint64_t minAmount = BRWalletSweeperCalculateMinOutputAmount(feePerKb);
     if ((feeAmount + minAmount) > balanceAmount) {
         BRTransactionFree (transaction);
