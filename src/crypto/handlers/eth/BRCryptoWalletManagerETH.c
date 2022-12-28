@@ -260,7 +260,7 @@ cryptoWalletManagerEstimateLimitETH (BRCryptoWalletManager cwm,
 
     BRCryptoAmount balance = cryptoWalletGetBalance (wallet);
     BRCryptoBoolean overflow = CRYPTO_FALSE;
-    double adjustedValue = cryptoAmountGetDouble (balance, unit, &overflow) * 0.95; // Reduce balance so that estimateFee API call succeeds
+    double adjustedValue = cryptoAmountGetDouble (balance, unit, &overflow) * 0.85; // Reduce balance so that estimateFee API call succeeds
     BRCryptoAmount adjustedBalance = cryptoAmountCreateDouble (adjustedValue, unit);
     
     return (CRYPTO_TRUE == asMaximum
