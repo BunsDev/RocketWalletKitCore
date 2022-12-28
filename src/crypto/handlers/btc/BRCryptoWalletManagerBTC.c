@@ -149,6 +149,49 @@ cryptoWalletManagerEstimateLimitBTC (BRCryptoWalletManager cwm,
 
     if (amountInSAT + fee > balance)
         amountInSAT = 0;
+    
+    uint64_t sizeInByte = (fee * 1000) / feePerKB;
+    uint64_t feeMinimum = 10 * sizeInByte; // 10 satoshi per byte minimum
+
+    if(fee < feeMinimum) {
+        fee = feeMinimum;
+    }
+
+    return CRYPTO_FALSE == asMaximum
+                ? cryptoAmountCreateInteger ((int64_t) amountInSAT, unit)
+                : cryptoAmountCreateInteger ((int64_t) (balance - fee), unit);
+}
+
+static BRCryptoAmount
+cryptoWalletManagerEstimateLimitBSV (BRCryptoWalletManager cwm,
+                                            BRCryptoWallet  wallet,
+                                            BRCryptoBoolean asMaximum,
+                                            BRCryptoAddress target,
+                                            BRCryptoNetworkFee networkFee,
+                                            BRCryptoBoolean *needEstimate,
+                                            BRCryptoBoolean *isZeroIfInsuffientFunds,
+                                            BRCryptoUnit unit) {
+    BRWallet *btcWallet = cryptoWalletAsBTC (wallet);
+
+    // Amount may be zero if insufficient fees
+    *isZeroIfInsuffientFunds = CRYPTO_TRUE;
+
+    // NOTE: We know BTC/BCH has a minimum balance of zero.
+
+    uint64_t balance     = BRWalletBalance (btcWallet);
+    uint64_t feePerKB    = 1000 * cryptoNetworkFeeAsBTC (networkFee);
+    uint64_t amountInSAT = (CRYPTO_FALSE == asMaximum
+                            ? BRWalletMinOutputAmountWithFeePerKb (btcWallet, feePerKB)
+                            : BRWalletMaxOutputAmountWithFeePerKb (btcWallet, feePerKB));
+    uint64_t fee         = (amountInSAT > 0
+                            ? BRWalletFeeForTxAmountWithFeePerKb (btcWallet, feePerKB, amountInSAT)
+                            : 0);
+
+    //            if (CRYPTO_TRUE == asMaximum)
+    //                assert (balance == amountInSAT + fee);
+
+    if (amountInSAT + fee > balance)
+        amountInSAT = 0;
 
     return cryptoAmountCreateInteger ((int64_t) amountInSAT, unit);
 }
@@ -710,7 +753,7 @@ BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersBCH = {
     cryptoWalletManagerCreateWalletBTC,
     cryptoWalletManagerSignTransactionWithSeedBTC,
     cryptoWalletManagerSignTransactionWithKeyBTC,
-    cryptoWalletManagerEstimateLimitBTC,
+    cryptoWalletManagerEstimateLimitBSV,
     cryptoWalletManagerEstimateFeeBasisBSV,
     cryptoWalletManagerSaveTransactionBundleBTC,
     NULL, // BRCryptoWalletManagerSaveTransactionBundleHandler
@@ -730,7 +773,7 @@ BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersBSV = {
     cryptoWalletManagerCreateWalletBTC,
     cryptoWalletManagerSignTransactionWithSeedBTC,
     cryptoWalletManagerSignTransactionWithKeyBTC,
-    cryptoWalletManagerEstimateLimitBTC,
+    cryptoWalletManagerEstimateLimitBSV,
     cryptoWalletManagerEstimateFeeBasisBSV,
     cryptoWalletManagerSaveTransactionBundleBTC,
     NULL, // BRCryptoWalletManagerSaveTransactionBundleHandler
