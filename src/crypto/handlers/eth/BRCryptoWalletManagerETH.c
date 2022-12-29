@@ -277,10 +277,6 @@ cryptoWalletManagerEstimateFeeBasisETH (BRCryptoWalletManager manager,
                                         BRCryptoNetworkFee networkFee,
                                         size_t attributesCount,
                                         OwnershipKept BRCryptoTransferAttribute *attributes) {
-    BRCryptoBoolean overflow = CRYPTO_FALSE;
-    double amountDouble = cryptoAmountGetDouble (amount,
-                                                 wallet->unit, &overflow);
-    
     BRCryptoWalletETH walletETH = cryptoWalletCoerce (wallet);
 
     BREthereumFeeBasis ethFeeBasis = {
