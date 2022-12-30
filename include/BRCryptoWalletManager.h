@@ -39,6 +39,16 @@ extern "C" {
                                BRCryptoAddressScheme scheme,
                                const char *path);
 
+    extern BRCryptoWalletManager
+    cryptoWalletManagerCreateBIP44 (BRCryptoWalletManagerListener listener,
+                               BRCryptoClient client,
+                               BRCryptoAccount account,
+                               BRCryptoNetwork network,
+                               BRCryptoSyncMode mode,
+                               BRCryptoAddressScheme scheme,
+                               const char *path,
+                               const char *phrase);
+
     extern BRCryptoNetwork
     cryptoWalletManagerGetNetwork (BRCryptoWalletManager cwm);
 

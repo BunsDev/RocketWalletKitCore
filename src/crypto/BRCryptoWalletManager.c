@@ -366,6 +366,126 @@ cryptoWalletManagerAllocAndInit (size_t sizeInBytes,
 }
 
 extern BRCryptoWalletManager
+cryptoWalletManagerAllocAndInitBIP44 (size_t sizeInBytes,
+                                 BRCryptoBlockChainType type,
+                                 BRCryptoWalletManagerListener listener,
+                                 BRCryptoClient client,
+                                 BRCryptoAccount account,
+                                 BRCryptoNetwork network,
+                                 BRCryptoAddressScheme scheme,
+                                 const char *path,
+                                 BRCryptoClientQRYByType byType,
+                                 BRCryptoWalletManagerCreateContext createContext,
+                                 BRCryptoWalletManagerCreateCallback createCallback,
+                                 const char *phrase) {
+    assert (sizeInBytes >= sizeof (struct BRCryptoWalletManagerRecord));
+    assert (type == cryptoNetworkGetType(network));
+
+    BRCryptoWalletManager manager = calloc (1, sizeInBytes);
+    if (NULL == manager) return NULL;
+
+    manager->type = type;
+    manager->handlers = cryptoHandlersLookup(type)->manager;
+    network->sizeInBytes = sizeInBytes;
+    manager->listener = listener;
+
+    manager->client  = client;
+    manager->network = cryptoNetworkTake (network);
+    manager->account = cryptoAccountTake (account);
+    manager->state   = cryptoWalletManagerStateInit (CRYPTO_WALLET_MANAGER_STATE_CREATED);
+    manager->addressScheme = scheme;
+    manager->path = strdup (path);
+
+    manager->byType = byType;
+
+    // Hold this early
+    manager->ref = CRYPTO_REF_ASSIGN (cryptoWalletManagerRelease);
+
+    // Initialize to NULL, for now.
+    manager->qryManager = NULL;
+    manager->p2pManager = NULL;
+    manager->wallet     = NULL;
+    array_new (manager->wallets, 1);
+
+    // File Service
+    const char *currencyName = cryptoBlockChainTypeGetCurrencyCode (manager->type);
+    const char *networkName  = cryptoNetworkGetDesc(network);
+
+    // TODO: Replace `createFileService` with `getFileServiceSpecifications`
+    manager->fileService = manager->handlers->createFileService (manager,
+                                                                 manager->path,
+                                                                 currencyName,
+                                                                 networkName,
+                                                                 manager,
+                                                                 cryptoWalletManagerFileServiceErrorHandler);
+
+    // TODO: This causes an Android (only - Core Demo App) crash.  Understand, then restore
+    // fileServicePurge (manager->fileService);
+
+    // Create the alarm clock, but don't start it.
+    alarmClockCreateIfNecessary(0);
+
+    // Create the event handler name (useful for debugging).
+    char handlerName[5 + strlen(currencyName) + 1];
+    sprintf(handlerName, "Core %s", currencyName);
+    for (char *s = &handlerName[5]; *s; s++) *s = toupper (*s);
+
+    // Get the event handler types.
+    size_t eventTypesCount;
+    const BREventType **eventTypes = manager->handlers->getEventTypes (manager, &eventTypesCount);
+
+    // Create the event handler
+    manager->handler = eventHandlerCreate (handlerName,
+                                           eventTypes,
+                                           eventTypesCount,
+                                           &manager->lock);
+
+    eventHandlerSetTimeoutDispatcher (manager->handler,
+                                      cryptoWalletManagerBoundSamplingPeriod ((1000 * cryptoNetworkGetConfirmationPeriodInSeconds(network)) / CWM_CONFIRMATION_PERIOD_FACTOR),
+                                      (BREventDispatcher) cryptoWalletManagerPeriodicDispatcher,
+                                      (void*) manager);
+
+    manager->listenerWallet = cryptoListenerCreateWalletListener (&manager->listener, manager);
+
+    pthread_mutex_init_brd (&manager->lock, PTHREAD_MUTEX_RECURSIVE);
+
+    BRCryptoTimestamp   earliestAccountTime = cryptoAccountGetTimestamp (account);
+    BRCryptoBlockNumber earliestBlockNumber = cryptoNetworkGetBlockNumberAtOrBeforeTimestamp(network, earliestAccountTime);
+    BRCryptoBlockNumber latestBlockNumber   = cryptoNetworkGetHeight (network);
+
+    // Setup the QRY Manager
+    manager->qryManager = cryptoClientQRYManagerCreate (client,
+                                                        manager,
+                                                        manager->byType,
+                                                        earliestBlockNumber,
+                                                        latestBlockNumber);
+
+    if (createCallback) createCallback (createContext, manager);
+    
+    // Announce the created manager; this must preceed any wallet created/added events
+    cryptoWalletManagerGenerateEvent (manager, (BRCryptoWalletManagerEvent) {
+        CRYPTO_WALLET_MANAGER_EVENT_CREATED
+    });
+
+    cryptoWalletManagerInitialTransferBundlesLoad (manager);
+    cryptoWalletManagerInitialTransactionBundlesLoad (manager);
+
+    // Create the primary wallet
+    manager->wallet = cryptoWalletManagerCreateWalletInitialized (manager,
+                                                                  network->currency,
+                                                                  manager->bundleTransactions,
+                                                                  manager->bundleTransfers);
+
+    // Create the P2P manager
+    manager->p2pManager = manager->handlers->createP2PManager (manager);
+
+    // Allow callers to be in an atomic region.
+    pthread_mutex_lock (&manager->lock);
+    return manager;
+}
+
+
+extern BRCryptoWalletManager
 cryptoWalletManagerCreate (BRCryptoWalletManagerListener listener,
                            BRCryptoClient client,
                            BRCryptoAccount account,
@@ -389,6 +509,46 @@ cryptoWalletManagerCreate (BRCryptoWalletManagerListener listener,
                                                       mode,
                                                       scheme,
                                                       path);
+    if (NULL == manager) return NULL;
+
+    // Recover transfers and transactions
+    cryptoWalletManagerInitialTransferBundlesRecover (manager);
+    cryptoWalletManagerInitialTransactionBundlesRecover (manager);
+
+    pthread_mutex_unlock (&manager->lock);
+
+    // Set the mode for QRY or P2P syncing
+    cryptoWalletManagerSetMode (manager, mode);
+
+    return manager;
+}
+
+extern BRCryptoWalletManager
+cryptoWalletManagerCreateBIP44 (BRCryptoWalletManagerListener listener,
+                           BRCryptoClient client,
+                           BRCryptoAccount account,
+                           BRCryptoNetwork network,
+                           BRCryptoSyncMode mode,
+                           BRCryptoAddressScheme scheme,
+                           const char *path,
+                           const char *phrase) {
+    // Only create a wallet manager for accounts that are initialized on network.
+    if (CRYPTO_FALSE == cryptoNetworkIsAccountInitialized (network, account))
+        return NULL;
+
+    // Lookup the handler for the network's type.
+    BRCryptoBlockChainType type = cryptoNetworkGetType(network);
+    const BRCryptoWalletManagerHandlers *handlers = cryptoHandlersLookup(type)->manager;
+
+    // Create the manager
+    BRCryptoWalletManager manager = handlers->createBIP44 (listener,
+                                                      client,
+                                                      account,
+                                                      network,
+                                                      mode,
+                                                      scheme,
+                                                      path,
+                                                      phrase);
     if (NULL == manager) return NULL;
 
     // Recover transfers and transactions
@@ -619,6 +779,18 @@ cryptoWalletManagerCreateWalletInitialized (BRCryptoWalletManager cwm,
     BRCryptoWallet wallet = cryptoWalletManagerGetWalletForCurrency (cwm, currency);
     return (NULL == wallet
             ? cwm->handlers->createWallet (cwm, currency, transactions, transfers)
+            : wallet);
+}
+
+extern BRCryptoWallet
+cryptoWalletManagerCreateWalletInitializedBIP44 (BRCryptoWalletManager cwm,
+                                            BRCryptoCurrency currency,
+                                            Nullable OwnershipKept BRArrayOf(BRCryptoClientTransactionBundle) transactions,
+                                            Nullable OwnershipKept BRArrayOf(BRCryptoClientTransferBundle) transfers,
+                                                 const char *phrase) {
+    BRCryptoWallet wallet = cryptoWalletManagerGetWalletForCurrency (cwm, currency);
+    return (NULL == wallet
+            ? cwm->handlers->createWalletBIP44 (cwm, currency, transactions, transfers, phrase)
             : wallet);
 }
 

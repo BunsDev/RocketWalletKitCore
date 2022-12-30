@@ -602,6 +602,42 @@ cryptoSystemCreateWalletManager (BRCryptoSystem system,
     return manager;
 }
 
+extern BRCryptoWalletManager
+cryptoSystemCreateWalletManagerBIP44 (BRCryptoSystem system,
+                                 BRCryptoNetwork network,
+                                 BRCryptoSyncMode mode,
+                                 BRCryptoAddressScheme scheme,
+                                 BRCryptoCurrency *currencies,
+                                 size_t currenciesCount,
+                                 const char *phrase) {
+    if (CRYPTO_FALSE == cryptoNetworkIsAccountInitialized (network, system->account)) {
+        return NULL;
+    }
+
+    BRCryptoWalletManager manager =
+    cryptoWalletManagerCreateBIP44 (cryptoListenerCreateWalletManagerListener (system->listener, system),
+                               system->client,
+                               system->account,
+                               network,
+                               mode,
+                               scheme,
+                               system->path,
+                               phrase);
+
+    cryptoSystemAddWalletManager (system, manager);
+
+    cryptoWalletManagerSetNetworkReachable (manager, system->isReachable);
+
+    for (size_t index = 0; index < currenciesCount; index++)
+        if (cryptoNetworkHasCurrency (network, currencies[index]))
+            cryptoWalletManagerCreateWallet (manager, currencies[index]);
+
+    // Start the event handler.
+    cryptoWalletManagerStart (manager);
+
+    return manager;
+}
+
 extern void cryptoSystemCreateSync (BRCryptoSystem system,
                                     BRCryptoWalletManager manager) {
     cryptoSystemStartSync (system,

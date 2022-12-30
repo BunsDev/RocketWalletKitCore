@@ -96,6 +96,15 @@ cryptoSystemCreateWalletManager (BRCryptoSystem system,
                                  BRCryptoCurrency *currencies,
                                  size_t currenciesCount);
 
+extern BRCryptoWalletManager
+cryptoSystemCreateWalletManagerBIP44 (BRCryptoSystem system,
+                                 BRCryptoNetwork network,
+                                 BRCryptoSyncMode mode,
+                                 BRCryptoAddressScheme scheme,
+                                 BRCryptoCurrency *currencies,
+                                 size_t currenciesCount,
+                                 const char *phrase);
+
 extern void cryptoSystemCreateSync (BRCryptoSystem system,
                                     BRCryptoWalletManager manager);
 

@@ -28,6 +28,8 @@
 #include <string.h>
 #include <assert.h>
 
+#include "BRBIP39Mnemonic.h"
+
 #define BIP32_SEED_KEY "Bitcoin seed"
 #define BIP32_XPRV     "\x04\x88\xAD\xE4"
 #define BIP32_XPUB     "\x04\x88\xB2\x1E"
@@ -135,6 +137,37 @@ BRMasterPubKey BRBIP32MasterPubKey(const void *seed, size_t seedLen)
     return mpk;
 }
 
+// returns the master public key for the default BIP44 wallet layout - derivation path N(m/44')
+BRMasterPubKey BRBIP44MasterPubKey(const void *seed, size_t seedLen)
+{
+    BRMasterPubKey mpk = BR_MASTER_PUBKEY_NONE;
+    UInt512 I;
+    UInt256 secret, chain;
+    BRKey key;
+
+    assert(seed != NULL || seedLen == 0);
+    
+    if (seed || seedLen == 0) {
+        BRHMAC(&I, BRSHA512, sizeof(UInt512), BIP32_SEED_KEY, strlen(BIP32_SEED_KEY), seed, seedLen);
+        secret = *(UInt256 *)&I;
+        chain = *(UInt256 *)&I.u8[sizeof(UInt256)];
+        var_clean(&I);
+    
+        BRKeySetSecret(&key, &secret, 1);
+        mpk.fingerPrint = BRKeyHash160(&key).u32[0];
+        
+        _CKDpriv(&secret, &chain, 44 | BIP32_HARD); // path m/44'
+    
+        mpk.chainCode = chain;
+        BRKeySetSecret(&key, &secret, 1);
+        var_clean(&secret, &chain);
+        BRKeyPubKey(&key, &mpk.pubKey, sizeof(mpk.pubKey)); // path N(m/44')
+        BRKeyClean(&key);
+    }
+    
+    return mpk;
+}
+
 // writes the public key for path N(m/0H/chain/index) to pubKey
 // returns number of bytes written, or pubKeyLen needed if pubKey is NULL
 size_t BRBIP32PubKey(uint8_t *pubKey, size_t pubKeyLen, BRMasterPubKey mpk, uint32_t chain, uint32_t index)
@@ -147,6 +180,33 @@ size_t BRBIP32PubKey(uint8_t *pubKey, size_t pubKeyLen, BRMasterPubKey mpk, uint
         *(BRECPoint *)pubKey = *(BRECPoint *)mpk.pubKey;
 
         _CKDpub((BRECPoint *)pubKey, &chainCode, chain); // path N(m/0H/chain)
+        _CKDpub((BRECPoint *)pubKey, &chainCode, index); // index'th key in chain
+        var_clean(&chainCode);
+    }
+    
+    return (! pubKey || sizeof(BRECPoint) <= pubKeyLen) ? sizeof(BRECPoint) : 0;
+}
+
+// writes the public key for path N(m/44'/0'/0'/chain/index) to pubKey
+// returns number of bytes written, or pubKeyLen needed if pubKey is NULL
+size_t BRBIP44PubKey(uint8_t *pubKey, size_t pubKeyLen, uint32_t chain, uint32_t index, const char *phrase)
+{    
+    UInt512 seed;
+    BRBIP39DeriveKey (seed.u8, phrase, NULL);
+    size_t seedLen = sizeof(UInt512);
+    
+    BRMasterPubKey mpk = BRBIP44MasterPubKey(seed.u8, seedLen);
+    
+    UInt256 chainCode = mpk.chainCode;
+    
+    assert(memcmp(&mpk, &BR_MASTER_PUBKEY_NONE, sizeof(mpk)) != 0);
+    
+    if (pubKey && sizeof(BRECPoint) <= pubKeyLen) {
+        *(BRECPoint *)pubKey = *(BRECPoint *)mpk.pubKey;
+
+        _CKDpub((BRECPoint *)pubKey, &chainCode, 0 | BIP32_HARD); // path N(m/44'/0')
+        _CKDpub((BRECPoint *)pubKey, &chainCode, 0 | BIP32_HARD); // path N(m/44'/0'/0')
+        _CKDpub((BRECPoint *)pubKey, &chainCode, chain); // path N(m/44'/0'/0'/chain)
         _CKDpub((BRECPoint *)pubKey, &chainCode, index); // index'th key in chain
         var_clean(&chainCode);
     }

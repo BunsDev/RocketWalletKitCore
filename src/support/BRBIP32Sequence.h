@@ -82,6 +82,10 @@ BRMasterPubKey BRBIP32MasterPubKey(const void *seed, size_t seedLen);
 // returns number of bytes written, or pubKeyLen needed if pubKey is NULL
 size_t BRBIP32PubKey(uint8_t *pubKey, size_t pubKeyLen, BRMasterPubKey mpk, uint32_t chain, uint32_t index);
 
+// writes the public key for path N(m/0H/chain/index) to pubKey
+// returns number of bytes written, or pubKeyLen needed if pubKey is NULL
+size_t BRBIP44PubKey(uint8_t *pubKey, size_t pubKeyLen, uint32_t chain, uint32_t index, const char *phrase);
+
 // sets the private key for path m/0H/chain/index to key
 void BRBIP32PrivKey(BRKey *key, const void *seed, size_t seedLen, uint32_t chain, uint32_t index);
 

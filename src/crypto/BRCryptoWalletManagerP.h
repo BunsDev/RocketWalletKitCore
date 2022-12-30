@@ -41,6 +41,16 @@ typedef BRCryptoWalletManager
                                        BRCryptoAddressScheme scheme,
                                        const char *path);
 
+typedef BRCryptoWalletManager
+(*BRCryptoWalletManagerCreateBIP44Handler) (BRCryptoWalletManagerListener listener,
+                                       BRCryptoClient client,
+                                       BRCryptoAccount account,
+                                       BRCryptoNetwork network,
+                                       BRCryptoSyncMode mode,
+                                       BRCryptoAddressScheme scheme,
+                                       const char *path,
+                                       const char *phrase);
+
 // The manager's lock is held
 typedef void
 (*BRCryptoWalletManagerReleaseHandler) (BRCryptoWalletManager manager);
@@ -99,6 +109,13 @@ typedef BRCryptoWallet
                                              Nullable OwnershipKept BRArrayOf(BRCryptoClientTransactionBundle) transactions,
                                              Nullable OwnershipKept BRArrayOf(BRCryptoClientTransferBundle) transfers);
 
+typedef BRCryptoWallet
+(*BRCryptoWalletManagerCreateWalletBIP44Handler) (BRCryptoWalletManager cwm,
+                                             BRCryptoCurrency currency,
+                                             Nullable OwnershipKept BRArrayOf(BRCryptoClientTransactionBundle) transactions,
+                                             Nullable OwnershipKept BRArrayOf(BRCryptoClientTransferBundle) transfers,
+                                                  const char *phrase);
+
 typedef void
 (*BRCryptoWalletManagerSaveTransactionBundleHandler) (BRCryptoWalletManager cwm,
                                                       OwnershipKept BRCryptoClientTransactionBundle bundle);
@@ -152,6 +169,8 @@ typedef struct {
     BRCryptoWalletManagerRecoverFeeBasisFromFeeEstimateHandler        recoverFeeBasisFromFeeEstimate;
     BRCryptoWalletManagerWalletSweeperValidateSupportedHandler validateSweeperSupported;
     BRCryptoWalletManagerCreateWalletSweeperHandler createSweeper;
+    BRCryptoWalletManagerCreateBIP44Handler createBIP44;
+    BRCryptoWalletManagerCreateWalletBIP44Handler createWalletBIP44;
 } BRCryptoWalletManagerHandlers;
 
 // MARK: - Wallet Manager State
@@ -225,6 +244,20 @@ cryptoWalletManagerAllocAndInit (size_t sizeInBytes,
                                  BRCryptoWalletManagerCreateContext createContext,
                                  BRCryptoWalletManagerCreateCallback createCallback);
 
+extern BRCryptoWalletManager
+cryptoWalletManagerAllocAndInitBIP44 (size_t sizeInBytes,
+                                 BRCryptoBlockChainType type,
+                                 BRCryptoWalletManagerListener listener,
+                                 BRCryptoClient client,
+                                 BRCryptoAccount account,
+                                 BRCryptoNetwork network,
+                                 BRCryptoAddressScheme scheme,
+                                 const char *path,
+                                 BRCryptoClientQRYByType byType,
+                                 BRCryptoWalletManagerCreateContext createContext,
+                                 BRCryptoWalletManagerCreateCallback createCallback,
+                                 const char *phrase);
+
 private_extern BRCryptoBlockChainType
 cryptoWalletManagerGetType (BRCryptoWalletManager manager);
 
@@ -256,6 +289,13 @@ cryptoWalletManagerCreateWalletInitialized (BRCryptoWalletManager cwm,
                                             BRCryptoCurrency currency,
                                             Nullable BRArrayOf(BRCryptoClientTransactionBundle) transactions,
                                             Nullable BRArrayOf(BRCryptoClientTransferBundle) transfers);
+
+private_extern BRCryptoWallet
+cryptoWalletManagerCreateWalletInitializedBIP44 (BRCryptoWalletManager cwm,
+                                            BRCryptoCurrency currency,
+                                            Nullable BRArrayOf(BRCryptoClientTransactionBundle) transactions,
+                                            Nullable BRArrayOf(BRCryptoClientTransferBundle) transfers,
+                                                 const char *phrase);
 
 private_extern void
 cryptoWalletManagerRecoverTransfersFromTransactionBundle (BRCryptoWalletManager cwm,

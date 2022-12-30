@@ -69,6 +69,30 @@ cryptoWalletManagerCreateBTC (BRCryptoWalletManagerListener listener,
     
 }
 
+static BRCryptoWalletManager
+cryptoWalletManagerCreateBIP44BTC (BRCryptoWalletManagerListener listener,
+                              BRCryptoClient client,
+                              BRCryptoAccount account,
+                              BRCryptoNetwork network,
+                              BRCryptoSyncMode mode,
+                              BRCryptoAddressScheme scheme,
+                              const char *path,
+                              const char *phrase) {
+    return cryptoWalletManagerAllocAndInitBIP44 (sizeof (struct BRCryptoWalletManagerBTCRecord),
+                                            cryptoNetworkGetType(network),
+                                            listener,
+                                            client,
+                                            account,
+                                            network,
+                                            scheme,
+                                            path,
+                                            CRYPTO_CLIENT_REQUEST_USE_TRANSACTIONS,
+                                            NULL,
+                                            NULL,
+                                            phrase);
+    
+}
+
 static void
 cryptoWalletManagerReleaseBTC (BRCryptoWalletManager manager) {
 
@@ -320,6 +344,82 @@ cryptoWalletManagerCreateWalletBTC (BRCryptoWalletManager manager,
 
     return wallet;
 }
+
+static BRCryptoWallet
+cryptoWalletManagerCreateWalletBIP44BTC (BRCryptoWalletManager manager,
+                                    BRCryptoCurrency currency,
+                                    Nullable OwnershipKept BRArrayOf(BRCryptoClientTransactionBundle) initialTransactionsBundles,
+                                    Nullable OwnershipKept BRArrayOf(BRCryptoClientTransferBundle) initialTransferBundles,
+                                        const char *phrase) {
+    assert (NULL == manager->wallet);
+    
+    // Get the btcMasterPublicKey
+    BRMasterPubKey btcMPK = cryptoAccountAsBTC(manager->account);
+
+    // Get the btcChainParams
+    const BRChainParams *btcChainParams = cryptoNetworkAsBTC(manager->network);
+
+    assert (NULL == initialTransactionsBundles || 0 == array_count (initialTransactionsBundles));
+    assert (NULL == initialTransferBundles     || 0 == array_count (initialTransferBundles));
+
+    BRArrayOf(BRTransaction*) transactions = initialTransactionsLoadBTC(manager);
+
+    // Create the BTC wallet
+    //
+    // Since the BRWallet callbacks are not set, none of these transactions generate callbacks.
+    // And, in fact, looking at BRWalletNew(), there is not even an attempt to generate callbacks
+    // even if they could have been specified.
+    BRWallet *btcWallet = BRWalletNewBIP44 (btcChainParams->addrParams, transactions, array_count(transactions), btcMPK, phrase);
+    assert (NULL != btcWallet);
+
+    // The btcWallet now should include *all* the transactions
+    array_free (transactions);
+
+    // Set the callbacks
+    BRWalletSetCallbacks (btcWallet,
+                          cryptoWalletManagerCoerceBTC(manager, manager->network->type),
+                          cryptoWalletManagerBTCBalanceChanged,
+                          cryptoWalletManagerBTCTxAdded,
+                          cryptoWalletManagerBTCTxUpdated,
+                          cryptoWalletManagerBTCTxDeleted);
+
+    // Create the primary BRCryptoWallet
+    BRCryptoNetwork  network       = manager->network;
+    BRCryptoUnit     unitAsBase    = cryptoNetworkGetUnitAsBase    (network, currency);
+    BRCryptoUnit     unitAsDefault = cryptoNetworkGetUnitAsDefault (network, currency);
+
+    BRCryptoWallet wallet = cryptoWalletCreateAsBTC (manager->type,
+                                                     manager->listenerWallet,
+                                                     unitAsDefault,
+                                                     unitAsDefault,
+                                                     btcWallet);
+    cryptoWalletManagerAddWallet (manager, wallet);
+
+    // Process existing btcTransactions in the btcWallet into BRCryptoTransfers
+    size_t btcTransactionsCount = BRWalletTransactions(btcWallet, NULL, 0);
+    BRTransaction *btcTransactions[btcTransactionsCount > 0 ? btcTransactionsCount : 1]; // avoid a static analysis error
+    BRWalletTransactions (btcWallet, btcTransactions, btcTransactionsCount);
+
+    BRArrayOf(BRCryptoTransfer) transfers;
+    array_new (transfers, btcTransactionsCount);
+
+    for (size_t index = 0; index < btcTransactionsCount; index++) {
+        array_add (transfers,
+                   cryptoTransferCreateAsBTC (wallet->listenerTransfer,
+                                              unitAsDefault,
+                                              unitAsBase,
+                                              btcWallet,
+                                              BRTransactionCopy(btcTransactions[index]),
+                                              manager->type));
+    }
+    cryptoWalletAddTransfers (wallet, transfers); // OwnershipGiven transfers
+
+    cryptoUnitGive (unitAsDefault);
+    cryptoUnitGive (unitAsBase);
+
+    return wallet;
+}
+
 
 private_extern void
 cryptoWalletManagerSaveTransactionBundleBTC (BRCryptoWalletManager manager,
@@ -741,7 +841,9 @@ BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersBTC = {
     cryptoWalletManagerRecoverTransferFromTransferBundleBTC,
     NULL,//BRCryptoWalletManagerRecoverFeeBasisFromFeeEstimateHandler not supported
     cryptoWalletManagerWalletSweeperValidateSupportedBTC,
-    cryptoWalletManagerCreateWalletSweeperBTC
+    cryptoWalletManagerCreateWalletSweeperBTC,
+    cryptoWalletManagerCreateBIP44BTC, // Added for BIP 44
+    cryptoWalletManagerCreateWalletBIP44BTC // Added for BIP 44
 };
 
 BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersBCH = {
