@@ -471,7 +471,7 @@ cryptoWalletManagerAllocAndInitBIP44 (size_t sizeInBytes,
     cryptoWalletManagerInitialTransactionBundlesLoad (manager);
 
     // Create the primary wallet
-    manager->wallet = cryptoWalletManagerCreateWalletInitialized (manager,
+    manager->wallet = cryptoWalletManagerCreateWalletInitializedBIP44 (manager,
                                                                   network->currency,
                                                                   manager->bundleTransactions,
                                                                   manager->bundleTransfers);
