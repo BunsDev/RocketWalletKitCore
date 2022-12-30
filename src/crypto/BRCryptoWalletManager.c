@@ -474,7 +474,8 @@ cryptoWalletManagerAllocAndInitBIP44 (size_t sizeInBytes,
     manager->wallet = cryptoWalletManagerCreateWalletInitializedBIP44 (manager,
                                                                   network->currency,
                                                                   manager->bundleTransactions,
-                                                                  manager->bundleTransfers);
+                                                                  manager->bundleTransfers,
+                                                                  phrase);
 
     // Create the P2P manager
     manager->p2pManager = manager->handlers->createP2PManager (manager);
