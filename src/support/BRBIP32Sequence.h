@@ -76,7 +76,14 @@ typedef struct {
     { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 } })
 
 // returns the master public key for the default BIP32 wallet layout - derivation path N(m/0H)
+BRMasterPubKey BRBIP32MasterPubKeyOriginal(const void *seed, size_t seedLen);
+
+// returns the master public key for the default BIP32 wallet layout - derivation path N(m/0H)
 BRMasterPubKey BRBIP32MasterPubKey(const void *seed, size_t seedLen);
+
+// writes the public key for path N(m/0H/chain/index) to pubKey
+// returns number of bytes written, or pubKeyLen needed if pubKey is NULL
+size_t BRBIP32PubKeyOriginal(uint8_t *pubKey, size_t pubKeyLen, BRMasterPubKey mpk, uint32_t chain, uint32_t index);
 
 // writes the public key for path N(m/0H/chain/index) to pubKey
 // returns number of bytes written, or pubKeyLen needed if pubKey is NULL
@@ -84,6 +91,10 @@ size_t BRBIP32PubKey(uint8_t *pubKey, size_t pubKeyLen, BRMasterPubKey mpk, uint
 
 // sets the private key for path m/0H/chain/index to key
 void BRBIP32PrivKey(BRKey *key, const void *seed, size_t seedLen, uint32_t chain, uint32_t index);
+
+// sets the private key for path m/0H/chain/index to each element in keys
+void BRBIP32PrivKeyListOriginal(BRKey keys[], size_t keysCount, const void *seed, size_t seedLen, uint32_t chain,
+                        const uint32_t indexes[]);
 
 // sets the private key for path m/0H/chain/index to each element in keys
 void BRBIP32PrivKeyList(BRKey keys[], size_t keysCount, const void *seed, size_t seedLen, uint32_t chain,
