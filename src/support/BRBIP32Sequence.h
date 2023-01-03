@@ -93,11 +93,11 @@ size_t BRBIP32PubKey(uint8_t *pubKey, size_t pubKeyLen, BRMasterPubKey mpk, uint
 void BRBIP32PrivKey(BRKey *key, const void *seed, size_t seedLen, uint32_t chain, uint32_t index);
 
 // sets the private key for path m/0H/chain/index to each element in keys
-void BRBIP32PrivKeyList(BRKey keys[], size_t keysCount, const void *seed, size_t seedLen, uint32_t chain,
+void BRBIP32PrivKeyListOriginal(BRKey keys[], size_t keysCount, const void *seed, size_t seedLen, uint32_t chain,
                         const uint32_t indexes[]);
 
 // sets the private key for path m/0H/chain/index to each element in keys
-void BRBIP32PrivKeyListModified(BRKey keys[], size_t keysCount, const void *seed, size_t seedLen, uint32_t chain,
+void BRBIP32PrivKeyList(BRKey keys[], size_t keysCount, const void *seed, size_t seedLen, uint32_t chain,
                         const uint32_t indexes[]);
     
 // sets the private key for the specified path to key

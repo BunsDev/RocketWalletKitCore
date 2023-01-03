@@ -758,6 +758,14 @@ int BRWalletSignTransaction(BRWallet *wallet, BRTransaction *tx, uint8_t forkId,
     if (seed) {
         BRBIP32PrivKeyList(keys, internalCount, seed, seedLen, SEQUENCE_INTERNAL_CHAIN, internalIdx);
         BRBIP32PrivKeyList(&keys[internalCount], externalCount, seed, seedLen, SEQUENCE_EXTERNAL_CHAIN, externalIdx);
+        // The BIP32 privateKey for m/44'/60'/0'/0/index
+        BRKey privateKey;
+        BRBIP32PrivKeyPath(&privateKey, &seed, sizeof(UInt512), 5,
+                           44 | BIP32_HARD,          // purpose  : BIP-44
+                           0 | BIP32_HARD,          // coin_type: BTC
+                           0 | BIP32_HARD,          // account  : <n/a>
+                           0,                        // change   : not change
+                           index);                   // index    :
         // TODO: XXX wipe seed callback
         seed = NULL;
         if (tx) r = BRTransactionSign(tx, forkId, keys, internalCount + externalCount);
