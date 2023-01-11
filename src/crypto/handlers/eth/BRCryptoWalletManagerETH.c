@@ -280,7 +280,7 @@ cryptoWalletManagerEstimateFeeBasisETH (BRCryptoWalletManager manager,
     BRCryptoBoolean overflow = CRYPTO_FALSE;
     double amountDouble = cryptoAmountGetDouble (amount,
                                                  wallet->unit, &overflow);
-    printf("amountDouble = %.12f\n", amountDouble);
+    printf("amountDouble = %.20f\n", amountDouble);
     
     BRCryptoWalletETH walletETH = cryptoWalletCoerce (wallet);
 
