@@ -271,7 +271,7 @@ cryptoWalletSweeperValidateBTC (BRCryptoWalletSweeper sweeper) {
     }
 
     if (0 == BRWalletSweeperGetBalance (sweeperBTC)) {
-        return CRYPTO_WALLET_SWEEPER_INSUFFICIENT_FUNDS;
+        return CRYPTO_WALLET_SWEEPER_NO_TRANSFERS_FOUND;
     }
 
     return CRYPTO_WALLET_SWEEPER_SUCCESS;
