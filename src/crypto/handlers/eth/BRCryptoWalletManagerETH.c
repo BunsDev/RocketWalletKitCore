@@ -258,14 +258,9 @@ cryptoWalletManagerEstimateLimitETH (BRCryptoWalletManager cwm,
     // are paid in ETH
     *needEstimate = AS_CRYPTO_BOOLEAN (wallet == cwm->wallet);
 
-    BRCryptoAmount balance = cryptoWalletGetBalance (wallet);
-    BRCryptoBoolean overflow = CRYPTO_FALSE;
-    double adjustedValue = cryptoAmountGetDouble (balance, unit, &overflow) * 0.85; // Reduce balance so that estimateFee API call succeeds
-    BRCryptoAmount adjustedBalance = cryptoAmountCreateDouble (adjustedValue, unit);
-    
     return (CRYPTO_TRUE == asMaximum
-            ? adjustedBalance      // Maximum is balance - fees 'needEstimate'
-            : cryptoAmountCreateInteger (0, unit));  // No minimum
+                ? cryptoWalletGetBalance (wallet)        // Maximum is balance - fees 'needEstimate'
+                : cryptoAmountCreateInteger (0, unit));  // No minimum
 }
 
 static BRCryptoFeeBasis
