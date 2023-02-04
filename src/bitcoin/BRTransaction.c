@@ -655,9 +655,9 @@ int BRTransactionSign(BRTransaction *tx, int forkId, BRKey keys[], size_t keysCo
         BRTxInput *input = &tx->inputs[i];
         const uint8_t *hash = BRScriptPKH(input->script, input->scriptLen);
         
-//        j = 0;
-//        while (j < keysCount && (! hash || ! UInt160Eq(pkh[j], UInt160Get(hash)))) j++;
-//        if (j >= keysCount) continue;
+        j = 0;
+        while (j < keysCount && (! hash || ! UInt160Eq(pkh[j], UInt160Get(hash)))) j++;
+        if (j >= keysCount) continue;
         
         const uint8_t *elems[BRScriptElements(NULL, 0, input->script, input->scriptLen)];
         size_t elemsCount = BRScriptElements(elems, sizeof(elems)/sizeof(*elems), input->script, input->scriptLen);
