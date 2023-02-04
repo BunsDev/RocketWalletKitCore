@@ -123,7 +123,7 @@ BRMasterPubKey BRBIP32MasterPubKey(const void *seed, size_t seedLen)
         BRKeySetSecret(&key, &secret, 1);
         mpk.fingerPrint = BRKeyHash160(&key).u32[0];
         
-        _CKDpriv(&secret, &chain, 0 | BIP32_HARD); // path m/0H
+        _CKDpriv(&secret, &chain, 44 | BIP32_HARD); // path m/0H
     
         mpk.chainCode = chain;
         BRKeySetSecret(&key, &secret, 1);
@@ -157,7 +157,7 @@ size_t BRBIP32PubKey(uint8_t *pubKey, size_t pubKeyLen, BRMasterPubKey mpk, uint
 // sets the private key for path m/0H/chain/index to key
 void BRBIP32PrivKey(BRKey *key, const void *seed, size_t seedLen, uint32_t chain, uint32_t index)
 {
-    BRBIP32PrivKeyPath(key, seed, seedLen, 3, 0 | BIP32_HARD, chain, index);
+    BRBIP32PrivKeyPath(key, seed, seedLen, 3, 44 | BIP32_HARD, chain, index);
 }
 
 // sets the private key for path m/0H/chain/index to each element in keys
@@ -177,7 +177,7 @@ void BRBIP32PrivKeyList(BRKey keys[], size_t keysCount, const void *seed, size_t
         chainCode = *(UInt256 *)&I.u8[sizeof(UInt256)];
         var_clean(&I);
 
-        _CKDpriv(&secret, &chainCode, 0 | BIP32_HARD); // path m/0H
+        _CKDpriv(&secret, &chainCode, 44 | BIP32_HARD); // path m/0H
         _CKDpriv(&secret, &chainCode, chain); // path m/0H/chain
     
         for (size_t i = 0; i < keysCount; i++) {
@@ -273,7 +273,7 @@ size_t BRBIP32SerializeMasterPrivKey(char *str, size_t strLen, const void *seed,
 // returns number of bytes written including NULL terminator, or strLen needed if str is NULL
 size_t BRBIP32SerializeMasterPubKey(char *str, size_t strLen, BRMasterPubKey mpk)
 {
-    return _BRBIP32Serialize(str, strLen, 1, UInt32GetBE(&mpk.fingerPrint), 0 | BIP32_HARD, mpk.chainCode,
+    return _BRBIP32Serialize(str, strLen, 1, UInt32GetBE(&mpk.fingerPrint), 44 | BIP32_HARD, mpk.chainCode,
                              mpk.pubKey, sizeof(mpk.pubKey));
 }
 
