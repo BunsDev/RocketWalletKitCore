@@ -1292,7 +1292,7 @@ cryptoClientHandleEstimateTransactionFee (OwnershipKept BRCryptoWalletManager ma
     BRCryptoAmount pricePerCostFactor = cryptoNetworkFeeGetPricePerCostFactor (networkFee);
     double costFactor = (double) costUnits;
     BRCryptoFeeBasis feeBasis = NULL;
-    if (CRYPTO_SUCCESS == status)
+//    if (CRYPTO_SUCCESS == status)
         feeBasis = cryptoWalletManagerRecoverFeeBasisFromFeeEstimate (manager,
                                                                       networkFee,
                                                                       initialFeeBasis,
