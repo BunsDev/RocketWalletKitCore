@@ -1295,7 +1295,7 @@ cryptoClientHandleEstimateTransactionFee (OwnershipKept BRCryptoWalletManager ma
     
     double pricePerCostFactorDouble = cryptoAmountGetDouble(pricePerCostFactor, manager->wallet->unitForFee, &overflow);
     
-    print("pricePerCostFactor = %.12f\n", pricePerCostFactor);
+    printf("pricePerCostFactor = %.12f\n", pricePerCostFactorDouble);
     
     double costFactor = (double) costUnits;
     BRCryptoFeeBasis feeBasis = NULL;
