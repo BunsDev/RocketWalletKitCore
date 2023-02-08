@@ -1290,6 +1290,13 @@ cryptoClientHandleEstimateTransactionFee (OwnershipKept BRCryptoWalletManager ma
     BRCryptoFeeBasis initialFeeBasis = callbackState->u.estimateTransactionFee.initialFeeBasis;
 
     BRCryptoAmount pricePerCostFactor = cryptoNetworkFeeGetPricePerCostFactor (networkFee);
+    
+    BRCryptoBoolean overflow = CRYPTO_FALSE;
+    
+    double pricePerCostFactorDouble = cryptoAmountGetDouble(pricePerCostFactor, manager->wallet->unitForFee, &overflow);
+    
+    print("pricePerCostFactor = %.12f\n", pricePerCostFactor);
+    
     double costFactor = (double) costUnits;
     BRCryptoFeeBasis feeBasis = NULL;
 //    if (CRYPTO_SUCCESS == status)
