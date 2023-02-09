@@ -1291,15 +1291,20 @@ cryptoClientHandleEstimateTransactionFee (OwnershipKept BRCryptoWalletManager ma
 
     BRCryptoAmount pricePerCostFactor = cryptoNetworkFeeGetPricePerCostFactor (networkFee);
     
-    BRCryptoBoolean overflow = CRYPTO_FALSE;
-    
-    double pricePerCostFactorDouble = cryptoAmountGetDouble(pricePerCostFactor, manager->wallet->unitForFee, &overflow);
-    
-    printf("pricePerCostFactor = %.12f\n", pricePerCostFactorDouble);
-    
     double costFactor = (double) costUnits;
+    
+    if (CRYPTO_ERROR_GAS == status) {
+        BRCryptoBoolean overflow = CRYPTO_FALSE;
+        double pricePerCostFactorDouble = cryptoAmountGetDouble(pricePerCostFactor, manager->wallet->unitForFee, &overflow);
+        printf("pricePerCostFactor = %.12f\n", pricePerCostFactorDouble);
+        double costUnitsCalculated = (double) costUnits * pow(10,-18) / pricePerCostFactorDouble;
+        printf("costUnitsCalculated = %.12f\n", costUnitsCalculated);
+        costFactor = costUnitsCalculated;
+    }
+    
     BRCryptoFeeBasis feeBasis = NULL;
 //    if (CRYPTO_SUCCESS == status)
+    if (CRYPTO_SUCCESS == status || CRYPTO_ERROR_GAS == status)
         feeBasis = cryptoWalletManagerRecoverFeeBasisFromFeeEstimate (manager,
                                                                       networkFee,
                                                                       initialFeeBasis,
