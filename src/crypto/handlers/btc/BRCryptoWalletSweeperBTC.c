@@ -63,6 +63,8 @@ cryptoWalletSweeperGetAddressBTC (BRCryptoWalletSweeper sweeper) {
             
         case CRYPTO_NETWORK_TYPE_BCH:
             return cryptoAddressCreateFromLegacyStringAsBCH (sweeperBTC->addrParams, sweeperBTC->sourceAddress);
+        case CRYPTO_NETWORK_TYPE_LTC:
+            return cryptoAddressCreateFromStringAsLTC(sweeperBTC->addrParams, sweeperBTC->sourceAddress);
             
         default:
             assert (0);
@@ -633,5 +635,15 @@ BRCryptoWalletSweeperHandlers cryptoWalletSweeperHandlersBSV = {
     cryptoWalletSweeperAddTransactionFromBundleBTC,
     cryptoWalletSweeperEstimateFeeBasisForWalletSweepBSV,
     cryptoWalletSweeperCreateTransferForWalletSweepBSV,
+    cryptoWalletSweeperValidateBTC
+};
+
+BRCryptoWalletSweeperHandlers cryptoWalletSweeperHandlersLTC = {
+    cryptoWalletSweeperReleaseBTC,
+    cryptoWalletSweeperGetAddressBTC,
+    cryptoWalletSweeperGetBalanceBTC,
+    cryptoWalletSweeperAddTransactionFromBundleBTC,
+    cryptoWalletSweeperEstimateFeeBasisForWalletSweepBTC,
+    cryptoWalletSweeperCreateTransferForWalletSweepBTC,
     cryptoWalletSweeperValidateBTC
 };

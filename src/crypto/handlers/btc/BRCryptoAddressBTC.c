@@ -95,6 +95,16 @@ cryptoAddressCreateFromStringAsBSV (BRAddressParams params, const char *bsvAddre
             : NULL);
 }
 
+extern BRCryptoAddress
+cryptoAddressCreateFromStringAsLTC (BRAddressParams params, const char *ltcAddress) {
+    assert (ltcAddress);
+
+    return (BRAddressIsValid (params, ltcAddress)
+            ? cryptoAddressCreateAsBTC (CRYPTO_NETWORK_TYPE_LTC,
+                                        BRAddressFill(params, ltcAddress))
+            : NULL);
+}
+
 static void
 cryptoAddressReleaseBTC (BRCryptoAddress address) {
     BRCryptoAddressBTC addressANY = cryptoAddressCoerceANY (address);
@@ -122,6 +132,11 @@ cryptoAddressAsStringBSV (BRCryptoAddress address) {
     return strdup (addressBSV->addr.s);
 }
 
+static char *
+cryptoAddressAsStringLTC (BRCryptoAddress address) {
+    BRCryptoAddressBTC addressLTC = cryptoAddressCoerce (address, CRYPTO_NETWORK_TYPE_LTC);
+    return strdup (addressLTC->addr.s);
+}
 
 static bool
 cryptoAddressIsEqualBTC (BRCryptoAddress address1, BRCryptoAddress address2) {
@@ -157,5 +172,11 @@ BRCryptoAddressHandlers cryptoAddressHandlersBCH = {
 BRCryptoAddressHandlers cryptoAddressHandlersBSV = {
     cryptoAddressReleaseBTC,
     cryptoAddressAsStringBSV,
+    cryptoAddressIsEqualBTC
+};
+
+BRCryptoAddressHandlers wkAddressHandlersLTC = {
+    cryptoAddressReleaseBTC,
+    cryptoAddressAsStringLTC,
     cryptoAddressIsEqualBTC
 };

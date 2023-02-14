@@ -53,6 +53,21 @@ static BRCryptoHandlers handlers[NUMBER_OF_NETWORK_TYPES] = {
         &cryptoFeeBasisHandlersBTC,
         &cryptoWalletManagerHandlersBSV
     },
+    
+    {
+        CRYPTO_NETWORK_TYPE_LTC,
+//        &cryptoAccountHandlersLTC,
+        &cryptoNetworkHandlersLTC,
+        &cryptoAddressHandlersLTC,
+        &cryptoTransferHandlersLTC,
+        &cryptoWalletHandlersLTC,
+        &cryptoWalletSweeperHandlersLTC,
+        NULL,//WKExportablePaperWalletHandlers
+        &cryptoPaymentProtocolHandlersBTC,
+//        NULL,//WKWalletConnector
+        &cryptoFeeBasisHandlersBTC,
+        &cryptoWalletManagerHandlersLTC
+    },
 
     {
         CRYPTO_NETWORK_TYPE_ETH,

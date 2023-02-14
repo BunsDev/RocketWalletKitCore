@@ -342,3 +342,13 @@ BRCryptoTransferHandlers cryptoTransferHandlersBSV = {
     NULL, // getBytesForFeeEstimate
     cryptoTransferIsEqualBTC
 };
+
+BRCryptoTransferHandlers cryptoTransferHandlersLTC = {
+    cryptoTransferReleaseBTC,
+    cryptoTransferGetHashBTC,
+    NULL, // setHash
+    NULL, // updateIdentifier
+   cryptoTransferSerializeBTC,
+    NULL, // getBytesForFeeEstimate
+    cryptoTransferIsEqualBTC
+};

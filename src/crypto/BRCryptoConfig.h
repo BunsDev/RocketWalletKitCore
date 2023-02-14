@@ -11,6 +11,7 @@
 #define HAS_BTC_TESTNET     1
 #define HAS_BCH_TESTNET     1
 #define HAS_BSV_TESTNET     0
+#define HAS_LTC_TESTNET     0
 #define HAS_ETH_TESTNET     1
 #define HAS_XRP_TESTNET     0
 #define HAS_HBAR_TESTNET    0
@@ -110,6 +111,31 @@ DEFINE_MODES            ("bitcoinsv-testnet", CRYPTO_SYNC_MODE_API_ONLY,  CRYPTO
 #else
 DEFINE_MODES            ("bitcoinsv-testnet", CRYPTO_SYNC_MODE_P2P_ONLY)
 #endif
+#undef NETWORK_NAME
+
+// MARK: - LTC
+
+#define NETWORK_NAME    "Litecoin"
+DEFINE_NETWORK (CRYPTO_NETWORK_TYPE_LTC,  "litecoin-mainnet", NETWORK_NAME, "mainnet", true, 2056308, 12, (5*60)/2)  // 2.5 min
+DEFINE_NETWORK_FEE_ESTIMATE ("litecoin-mainnet", "2", "5m", 5 * 60 * 1000)
+DEFINE_CURRENCY ("litecoin-mainnet",     "litecoin-mainnet:__native__",   NETWORK_NAME,  CRYPTO_NETWORK_CURRENCY_LTC,  "native",   NULL,   true)
+    DEFINE_UNIT ("litecoin-mainnet:__native__",      "Satoshi",    "sat",      0,      "SAT")
+    DEFINE_UNIT ("litecoin-mainnet:__native__",      NETWORK_NAME, "ltc",      8,      "LTC")
+DEFINE_ADDRESS_SCHEMES  ("litecoin-mainnet", CRYPTO_ADDRESS_SCHEME_BTC_SEGWIT, CRYPTO_ADDRESS_SCHEME_BTC_LEGACY)
+DEFINE_MODES            ("litecoin-mainnet", CRYPTO_SYNC_MODE_API_ONLY, CRYPTO_SYNC_MODE_P2P_ONLY)
+
+DEFINE_NETWORK (CRYPTO_NETWORK_TYPE_LTC,  "litecoin-testnet", NETWORK_NAME, "testnet", false, 1903181, 12, (5*60)/2)  // 2.5 min
+DEFINE_NETWORK_FEE_ESTIMATE ("litecoin-testnet", "2", "5m", 5 * 60 * 1000)
+DEFINE_CURRENCY ("litecoin-testnet",     "litecoin-testnet:__native__",   NETWORK_NAME,  CRYPTO_NETWORK_CURRENCY_LTC,  "native",   NULL,   true)
+    DEFINE_UNIT ("litecoin-testnet:__native__",      "Satoshi",    "sat",      0,      "SAT")
+    DEFINE_UNIT ("litecoin-testnet:__native__",      NETWORK_NAME, "ltc",      8,      "LTC")
+DEFINE_ADDRESS_SCHEMES  ("litecoin-testnet", CRYPTO_ADDRESS_SCHEME_BTC_SEGWIT, CRYPTO_ADDRESS_SCHEME_BTC_LEGACY)
+#if HAS_LTC_TESTNET
+DEFINE_MODES            ("litecoin-testnet", CRYPTO_SYNC_MODE_API_ONLY,  CRYPTO_SYNC_MODE_P2P_ONLY)
+#else
+DEFINE_MODES            ("litecoin-testnet", CRYPTO_SYNC_MODE_P2P_ONLY)
+#endif
+//DEFINE_HANDLERS (CRYPTO_NETWORK_TYPE_LTC, LTC)
 #undef NETWORK_NAME
 
 // MARK: - ETH

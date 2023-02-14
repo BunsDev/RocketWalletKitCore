@@ -178,7 +178,8 @@ cryptoWalletGetAddressBTC (BRCryptoWallet wallet,
             CRYPTO_ADDRESS_SCHEME_BTC_SEGWIT == addressScheme);
 
     assert (CRYPTO_ADDRESS_SCHEME_BTC_SEGWIT != addressScheme ||
-            CRYPTO_NETWORK_TYPE_BTC == wallet->type);
+            (CRYPTO_NETWORK_TYPE_BTC == wallet->type ||
+             CRYPTO_NETWORK_TYPE_LTC == wallet->type));
 
     BRCryptoWalletBTC walletBTC = cryptoWalletCoerceBTC(wallet);
 
@@ -399,6 +400,20 @@ BRCryptoWalletHandlers cryptoWalletHandlersBCH = {
 };
 
 BRCryptoWalletHandlers cryptoWalletHandlersBSV = {
+    cryptoWalletReleaseBTC,
+    cryptoWalletGetAddressBTC,
+    cryptoWalletHasAddressBTC,
+    cryptoWalletGetTransferAttributeCountBTC,
+    cryptoWalletGetTransferAttributeAtBTC,
+    cryptoWalletValidateTransferAttributeBTC,
+    cryptoWalletCreateTransferBTC,
+    cryptoWalletCreateTransferMultipleBTC,
+    cryptoWalletGetAddressesForRecoveryBTC,
+    NULL,
+    cryptoWalletIsEqualBTC
+};
+
+BRCryptoWalletHandlers cryptoWalletHandlersLTC = {
     cryptoWalletReleaseBTC,
     cryptoWalletGetAddressBTC,
     cryptoWalletHasAddressBTC,

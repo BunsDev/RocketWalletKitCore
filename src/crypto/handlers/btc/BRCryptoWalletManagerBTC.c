@@ -783,3 +783,23 @@ BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersBSV = {
     cryptoWalletManagerWalletSweeperValidateSupportedBTC,
     cryptoWalletManagerCreateWalletSweeperBTC
 };
+
+BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersLTC = {
+    cryptoWalletManagerCreateBTC,
+    cryptoWalletManagerReleaseBTC,
+    crytpWalletManagerCreateFileServiceBTC,
+    cryptoWalletManagerGetEventTypesBTC,
+    cryptoWalletManagerCreateP2PManagerBTC,
+    cryptoWalletManagerCreateWalletBTC,
+    cryptoWalletManagerSignTransactionWithSeedBTC,
+    cryptoWalletManagerSignTransactionWithKeyBTC,
+    cryptoWalletManagerEstimateLimitBTC,
+    cryptoWalletManagerEstimateFeeBasisBTC,
+    cryptoWalletManagerSaveTransactionBundleBTC,
+    NULL, // WKWalletManagerSaveTransactionBundleHandler
+    cryptoWalletManagerRecoverTransfersFromTransactionBundleBTC,
+    cryptoWalletManagerRecoverTransferFromTransferBundleBTC,
+    NULL,//WKWalletManagerRecoverFeeBasisFromFeeEstimateHandler not supported
+    cryptoWalletManagerWalletSweeperValidateSupportedBTC,
+    cryptoWalletManagerCreateWalletSweeperBTC
+};

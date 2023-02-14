@@ -53,6 +53,19 @@ extern BRCryptoWalletSweeperHandlers cryptoWalletSweeperHandlersBSV;
 extern BRCryptoFeeBasisHandlers cryptoFeeBasisHandlersBSV;
 extern BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersBSV;
 
+// MARK: - LTC Handlers
+
+//extern BRCryptoAccountHandlers cryptoAccountHandlersLTC;
+extern BRCryptoAddressHandlers cryptoAddressHandlersLTC;
+extern BRCryptoNetworkHandlers cryptoNetworkHandlersLTC;
+extern BRCryptoTransferHandlers cryptoTransferHandlersLTC;
+extern BRCryptoWalletHandlers cryptoWalletHandlersLTC;
+extern BRCryptoWalletSweeperHandlers cryptoWalletSweeperHandlersLTC;
+// ExportablePaperHandlers
+// Payment Protocol
+// Fee Basis
+extern BRCryptoWalletManagerHandlers cryptoWalletManagerHandlersLTC;
+
 // MARK: - ETH Handlers
 
 extern BRCryptoAddressHandlers cryptoAddressHandlersETH;
