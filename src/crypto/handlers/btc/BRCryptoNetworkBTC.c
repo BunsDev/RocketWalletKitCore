@@ -25,7 +25,8 @@ static BRCryptoNetworkBTC
 cryptoNetworkCoerceANY (BRCryptoNetwork network) {
     assert (CRYPTO_NETWORK_TYPE_BTC == network->type ||
             CRYPTO_NETWORK_TYPE_BCH == network->type ||
-            CRYPTO_NETWORK_TYPE_BSV == network->type);
+            CRYPTO_NETWORK_TYPE_BSV == network->type ||
+            CRYPTO_NETWORK_TYPE_LTC == network->type);
     return (BRCryptoNetworkBTC) network;
 }
 
