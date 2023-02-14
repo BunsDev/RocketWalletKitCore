@@ -175,7 +175,7 @@ BRCryptoAddressHandlers cryptoAddressHandlersBSV = {
     cryptoAddressIsEqualBTC
 };
 
-BRCryptoAddressHandlers wkAddressHandlersLTC = {
+BRCryptoAddressHandlers cryptoAddressHandlersLTC = {
     cryptoAddressReleaseBTC,
     cryptoAddressAsStringLTC,
     cryptoAddressIsEqualBTC
