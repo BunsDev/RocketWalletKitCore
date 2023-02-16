@@ -225,7 +225,8 @@ wkWalletCreateTransfer (WKWallet wallet,
                         WKAmount amount,
                         WKFeeBasis estimatedFeeBasis,
                         size_t attributesCount,
-                        OwnershipKept WKTransferAttribute *attributes);
+                        OwnershipKept WKTransferAttribute *attributes,
+                        const char* exchangeId);
 
 extern WKTransfer
 wkWalletCreateTransferForPaymentProtocolRequest (WKWallet wallet,

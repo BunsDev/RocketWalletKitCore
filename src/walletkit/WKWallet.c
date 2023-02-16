@@ -955,7 +955,8 @@ wkWalletCreateTransfer (WKWallet  wallet,
                             WKAmount  amount,
                             WKFeeBasis estimatedFeeBasis,
                             size_t attributesCount,
-                            OwnershipKept WKTransferAttribute *attributes) {
+                            OwnershipKept WKTransferAttribute *attributes,
+                            const char* exchangeId) {
     assert (wkWalletGetType(wallet) == wkAddressGetType(target));
     //    assert (wkWalletGetType(wallet) == wkFeeBasisGetType(estimatedFeeBasis));
 
@@ -978,6 +979,9 @@ wkWalletCreateTransfer (WKWallet  wallet,
 
     if (NULL != transfer && attributesCount > 0)
         wkTransferSetAttributes (transfer, attributesCount, attributes);
+    
+    if (NULL != transfer && NULL != exchangeId)
+        wkTransferSetExchangeId (transfer, exchangeId);
 
     wkCurrencyGive(currency);
     wkUnitGive (unitForFee);

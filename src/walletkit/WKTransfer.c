@@ -827,6 +827,11 @@ wkTransferAttributeSetValue (WKTransferAttribute attribute, const char *value) {
     attribute->value = (NULL == value ? NULL : strdup (value));
 }
 
+extern void
+wkTransferSetExchangeId (WKTransfer transfer, const char *exchangeId) {
+    transfer->exchangeId = strdup (exchangeId);
+}
+
 extern WKBoolean
 wkTransferAttributeIsRequired (WKTransferAttribute attribute) {
     return attribute->isRequired;
