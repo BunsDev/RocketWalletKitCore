@@ -1,6 +1,6 @@
 //
 //  BREthereumNetwork
-//  Core Ethereum
+//  WalletKitCore Ethereum
 //
 //  Created by Ed Gamble on 3/13/18.
 //  Copyright © 2018-2019 Breadwinner AG.  All rights reserved.
@@ -103,8 +103,8 @@ ethNetworkGetEnodesLocal (BREthereumNetwork network, int parity) {
 static struct BREthereumNetworkRecord ethNetworkMainnetRecord = {
     "mainnet",
     1,
-    EMPTY_HASH_INIT,
-    EMPTY_HASH_INIT,
+    ETHEREUM_EMPTY_HASH_INIT,
+    ETHEREUM_EMPTY_HASH_INIT,
     // Seeds
     { "seed.mainnet.eth.brd.breadwallet.com",
         "seed.mainnet.eth.community.breadwallet.com",
@@ -163,19 +163,23 @@ MainnetChainConfig = &ChainConfig{
 // Testnet
 //
 static struct BREthereumNetworkRecord ethNetworkTestnetRecord = {
-        "goerli",
-        5,
-        EMPTY_HASH_INIT,
-        EMPTY_HASH_INIT,
-        // Seeds
-        {NULL},
+    "testnet", // aka "ropsten"
+    3,
+    ETHEREUM_EMPTY_HASH_INIT,
+    ETHEREUM_EMPTY_HASH_INIT,
+    // Seeds
+    {   "seed.ropsten.eth.brd.breadwallet.com",
+        "seed.ropsten.eth.community.breadwallet.com",
+        NULL },
 
-        // Enodes
+    // Enodes
 
-        {NULL},
-        {NULL},
-        {NULL},
-        {NULL}
+    // BRD
+    {   "enode://87ef58b88a9c7574eb870097675e26f78dcd958834bd768b678aa01eabd316c74df1ff01bfbe030c5b75878646df4108554434df61de591a2c6859e329bbacde@138.68.6.252:8888",
+        NULL },
+    { NULL },
+    { NULL },
+    { NULL }
 };
 const BREthereumNetwork ethNetworkTestnet = &ethNetworkTestnetRecord;
 
@@ -200,8 +204,8 @@ TestnetChainConfig = &ChainConfig{
 static struct BREthereumNetworkRecord ethNetworkRinkebyRecord = {
     "rinkeby",
     4,
-    EMPTY_HASH_INIT,
-    EMPTY_HASH_INIT,
+    ETHEREUM_EMPTY_HASH_INIT,
+    ETHEREUM_EMPTY_HASH_INIT,
     // Seeds
     { NULL },
 
@@ -288,13 +292,13 @@ networkInitilizeAllIfAppropriate (void) {
         ethNetworkMainnetRecord.trustedCheckpointBlockHeaderHash =
         ethHashCreate("0x04c2114a8cbe49ba5c37a03cc4b4b8d3adfc0bd2c78e0e726405dd84afca1d63");
 
-        // Testnet / 'Goerli'
+        // Testnet / 'Ropsten'
 
         ethNetworkTestnetRecord.genesisBlockHeaderHash =
-        ethHashCreate("0xbf7e331f7f7c1dd2e05159666b3bf8bc7a8a3a9eb1d518969eab529dd9b88c1a");
+        ethHashCreate("0x41941023680923e0fe4d74a34bdac8141f2540e3ae90623718e47d66d1ca4a2d");
 
         ethNetworkTestnetRecord.trustedCheckpointBlockHeaderHash =
-        ethHashCreate("0x0938fafd9624e76047c1b8f2eb60908f8750bf4f6bc2fec3bc33f7992b2919c7");
+        ethHashCreate("0x1b1ba890510e06411fdee9bb64ca7705c56a1a4ce3559ddb34b3680c526cb419");
 
         // Rinkeby
 

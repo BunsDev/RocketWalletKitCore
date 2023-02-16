@@ -13,14 +13,19 @@
 
 #include "ethereum/blockchain/BREthereumNetwork.h"
 #include "ethereum/blockchain/BREthereumAccount.h"
-#include "BRCryptoSync.h"
-#include "BRCryptoAccount.h"
-#include "BRCryptoNetwork.h"
-#include "bitcoin/BRChainParams.h"
+#include "WKSync.h"
+#include "WKAccount.h"
+#include "WKNetwork.h"
+#include "bitcoin/BRBitcoinChainParams.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+// Support
+
+// JSON
+extern void runJsonTests (void);
 
 // Util
 extern void runUtilTests (void);
@@ -28,8 +33,11 @@ extern void runUtilTests (void);
 // RLP
 extern void runRlpTests (void);
 
+
 // Event
 extern void runEventTests (void);
+
+// Ethereum
 
 // Base
 extern void runBaseTests (void);
@@ -37,17 +45,22 @@ extern void runBaseTests (void);
 // Block Chain
 extern void runBcTests (void);
 
+// Transactions
+extern void runTransactionTests (int reallySend);
+
 // Contract
 extern void runContractTests (void);
 
+// Structure
+extern void runStructureTests (void);
+
+#if REFACTOR
 // LES
 extern void runLESTests(const char *paperKey);
-
-extern void
-runNodeTests (void);
+extern void runNodeTests (void);
 
 // EWM
-#if REFACTOR
+
 extern void
 runEWMTests (const char *paperKey,
              const char *storagePath);
@@ -55,17 +68,15 @@ runEWMTests (const char *paperKey,
 extern void
 runSyncTest (BREthereumNetwork network,
              BREthereumAccount account,
-             BRCryptoSyncMode mode,
+             WKSyncMode mode,
              BREthereumTimestamp accountTimestamp,
              unsigned int durationInSeconds,
              const char *storagePath);
 //
 extern void
 installTokensForTest (void);
-#endif
 
-extern void
-runTests (int reallySend);
+#endif
 
 extern void
 runPerfTestsCoder (int repeat, int many);
@@ -74,10 +85,12 @@ runPerfTestsCoder (int repeat, int many);
 typedef enum {
     BITCOIN_CHAIN_BTC,
     BITCOIN_CHAIN_BCH,
-    BITCOIN_CHAIN_BSV
+    BITCOIN_CHAIN_BSV,
+    BITCOIN_CHAIN_LTC,
+    BITCOIN_CHAIN_DOGE
 } BRBitcoinChain;
 
-extern const BRChainParams*
+extern const BRBitcoinChainParams*
 getChainParams (BRBitcoinChain chain, int isMainnet);
 
 extern const char *
@@ -112,13 +125,19 @@ extern int BRRunTestsBWM (const char *paperKey,
 
 extern void BRRandInit (void);
 
-// testCrypto.c
-extern void runCryptoTests (void);
+// testWalletKit.c
+extern void runWalletKitTests (void);
 
-extern BRCryptoBoolean
-runCryptoTestsWithAccountAndNetwork (BRCryptoAccount account,
-                                     BRCryptoNetwork network,
-                                     const char *storagePath);
+// testWalletConnect.c
+extern void runWalletConnectTests (void);
+
+// testBTCWalletManager.c
+extern void runBTCWalletManagerTests (void);
+
+extern WKBoolean
+runWalletKitTestsWithAccountAndNetwork (WKAccount account,
+                                        WKNetwork network,
+                                        const char *storagePath);
 
 // Ripple
 extern void
@@ -131,6 +150,12 @@ runHederaTest (void);
 // Tezos
 extern void
 runTezosTest (void);
+
+// Stellar
+extern void
+runStellarTest (void);
+
+// __NEW_BLOCKCHAIN_TEST_DEFN__
 
 #ifdef __cplusplus
 }

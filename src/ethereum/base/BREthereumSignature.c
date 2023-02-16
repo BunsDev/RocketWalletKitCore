@@ -1,6 +1,6 @@
 //
 //  BREthereumSignature.c
-//  BRCore
+//  WalletKitCore
 //
 //  Created by Ed Gamble on 5/17/18.
 //  Copyright © 2018-2019 Breadwinner AG.  All rights reserved.
@@ -16,31 +16,34 @@
 // Signature
 //
 extern BREthereumSignature
-ethSignatureCreate(BREthereumSignatureType type,
-                   uint8_t *bytes,
-                   size_t bytesCount,
-                   BRKey privateKeyUncompressed) {
+ethSignatureCreateFromDigest (BREthereumSignatureType type,
+                              BREthereumHash digest,
+                              BRKey privateKey) {
+    // Ethereum signing expects an uncompressed key; force it.
+    BRKey privateKeyUncompressed = privateKey;
+    BRKeySetCompressed (&privateKeyUncompressed, 0);
+
+    // Copy `digest` to a `UInt256`, as expected by `BRKeyCompactSign()`
+    UInt256 digestAsUInt256;
+    memcpy (digestAsUInt256.u8, digest.bytes, 32);
+
     BREthereumSignature signature;
 
     // Save the type.
     signature.type = type;
-
-    // Hash with the required Keccak-256
-    UInt256 messageDigest;
-    BRKeccak256(&messageDigest, bytes, bytesCount);
 
     switch (type) {
         case SIGNATURE_TYPE_RECOVERABLE_VRS_EIP: {
             // Determine the signature length
             size_t signatureLen = BRKeyCompactSign (&privateKeyUncompressed,
                                                     NULL, 0,
-                                                    messageDigest);
+                                                    digestAsUInt256);
 
             // Fill the signature
             uint8_t signatureBytes[signatureLen];
             signatureLen = BRKeyCompactSign (&privateKeyUncompressed,
                                              signatureBytes, signatureLen,
-                                             messageDigest);
+                                             digestAsUInt256);
             assert (65 == signatureLen);
 
             // The actual 'signature' is one byte added to secp256k1_ecdsa_recoverable_signature
@@ -62,13 +65,13 @@ ethSignatureCreate(BREthereumSignatureType type,
             // Determine the signature length
             size_t signatureLen = BRKeyCompactSignEthereum (&privateKeyUncompressed,
                                                             NULL, 0,
-                                                            messageDigest);
+                                                            digestAsUInt256);
 
             // Fill the signature
             uint8_t signatureBytes[signatureLen];
             signatureLen = BRKeyCompactSignEthereum (&privateKeyUncompressed,
                                                      signatureBytes, signatureLen,
-                                                     messageDigest);
+                                                     digestAsUInt256);
             assert (65 == signatureLen);
 
             // The actual 'signature' is one byte added to secp256k1_ecdsa_recoverable_signature
@@ -82,8 +85,21 @@ ethSignatureCreate(BREthereumSignatureType type,
             break;
         }
     }
+    BRKeyClean (&privateKeyUncompressed);
 
     return signature;
+}
+
+extern BREthereumSignature
+ethSignatureCreate(BREthereumSignatureType type,
+                   const uint8_t *bytes,
+                   size_t bytesCount,
+                   BRKey privateKey,
+                   BREthereumHash *digestRef) {
+    // Hash with the required Keccak-256
+    BREthereumHash digest = ethHashCreateFromBytes (bytes, bytesCount);
+    if (NULL != digestRef) *digestRef = digest;
+    return ethSignatureCreateFromDigest (type, digest, privateKey);
 }
 
 extern BREthereumBoolean
@@ -122,7 +138,7 @@ ethSignatureExtractAddress(const BREthereumSignature signature,
     }
 
     return (0 == *success
-            ? (BREthereumAddress) EMPTY_ADDRESS_INIT
+            ? (BREthereumAddress) ETHEREUM_EMPTY_ADDRESS_INIT
             : ethAddressCreateKey(&key));
 }
 

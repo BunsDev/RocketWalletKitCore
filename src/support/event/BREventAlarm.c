@@ -1,6 +1,6 @@
 //
 //  BREventAlarm.c
-//  BRCore
+//  WalletKitCore
 //
 //  Created by Ed Gamble on 5/7/18.
 //  Copyright © 2018-2019 Breadwinner AG.  All rights reserved.
@@ -106,7 +106,6 @@ alarmCreatePeriodic (BREventAlarmContext context,
                      struct timespec expiration,  // first expiration...
                      struct timespec period,      // ...thereafter increment
                      BREventAlarmId identifier) {
-    timespecInc(&expiration, &period); // ADDED
     return (BREventAlarm) {
         .type = ALARM_PERIODIC,
         .identifier = identifier,
@@ -143,7 +142,6 @@ alarmPeriodUpdate (BREventAlarm *alarm) {
     struct timespec now = getTime();
     if (-1 == timespecCompare(&alarm->expiration, &now)) {
         alarm->expiration = now;
-        timespecInc(&alarm->expiration, &alarm->period); // ADDED
     }
 }
 

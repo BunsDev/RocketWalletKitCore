@@ -1,6 +1,6 @@
 //
 //  BRRippleAccount.h
-//  Core
+//  WalletKitCore
 //
 //  Created by Carl Cherry on 4/16/19.
 //  Copyright © 2019 Breadwinner AG. All rights reserved.
@@ -87,6 +87,20 @@ extern void rippleAccountSetLastLedgerSequence(BRRippleAccount account,
                                                BRRippleLastLedgerSequence lastLedgerSequence);
 
 /**
+ * Creates a transaction that will close this account and send all possible XRP to the toAddress (minus the fee)
+ *
+ * @param account   the account to close
+ * @param toAddress the account where any remaining XRP should be sent
+ * @param feeBasis  the fee need to send this transaction
+ *
+ * @return void
+ */
+extern BRRippleTransaction
+rippleAccountCreateCloseTransaction(BRRippleAccount account,
+                                    BRRippleAddress toAddress,
+                                    BRRippleFeeBasis feeBasis);
+
+/**
  * Serialize (and sign) a Ripple Transaction.  Ready for submission to the ledger.
  *
  * @param account         the account sending the payment
@@ -138,7 +152,11 @@ rippleAccountGetBalanceLimit (BRRippleAccount account,
                               int asMaximum,
                               int *hasLimit);
 
+// The default fee for a transfer
 extern BRRippleFeeBasis
 rippleAccountGetDefaultFeeBasis (BRRippleAccount account);
+// THe fee basis to delete an account
+extern BRRippleFeeBasis
+rippleAccountGetAccountDeleteFeeBasis (BRRippleAccount account);
 
 #endif

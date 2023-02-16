@@ -1,6 +1,6 @@
 //
 //  BREthereumBase
-//  Core Ethereum
+//  WalletKitCore Ethereum
 //
 //  Created by Ed Gamble on 3/22/18.
 //  Copyright © 2018-2019 Breadwinner AG.  All rights reserved.
@@ -15,8 +15,12 @@
 #include "support/BRArray.h"
 #include "support/BRBase.h"
 #include "support/BRSet.h"
-#include "ethereum/util/BRUtil.h"
+#include "support/util/BRUtil.h"
 #include "support/rlp/BRRlp.h"
+
+#if !defined(private_extern)
+#define private_extern  extern
+#endif
 
 // All 'base'
 #include "BREthereumLogic.h"
@@ -27,6 +31,7 @@
 #include "BREthereumData.h"
 #include "BREthereumAddress.h"
 #include "BREthereumSignature.h"
+#include "BREthereumStructure.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -73,7 +78,7 @@ typedef enum {
 typedef unsigned int BREthereumSyncInterestSet;
 
 static inline bool // 1/true if match; 0/false if not
-syncInterestMatch(BREthereumSyncInterestSet interests,
+ethSyncInterestMatch(BREthereumSyncInterestSet interests,
                   BREthereumSyncInterest interest) {
     return interests & interest;
 }

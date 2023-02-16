@@ -1,6 +1,6 @@
 //
 //  BRRippleTransaction.h
-//  Core
+//  WalletKitCore
 //
 //  Created by Carl Cherry on 4/16/19.
 //  Copyright © 2019 Breadwinner AG. All rights reserved.
@@ -129,9 +129,7 @@ struct BRRippleTransactionRecord {
     // The hash; if not provided, derived from signedBytes
     BRRippleTransactionHash hash;
 
-    // The ripple payment information
-    // TODO in the future if more transaction are supported this could
-    // be changed to a union of the various types
+    // The ripple transaction content
     BRRipplePaymentTxRecord payment;
 
     BRRippleSerializedTransaction signedBytes;
@@ -206,6 +204,20 @@ rippleTransactionCreate(BRRippleAddress sourceAddress,
     return transaction;
 }
 
+BRRippleTransaction rippleTransactionCreateCloseTransaction(BRRippleAddress sourceAddress,
+                                                            BRRippleAddress targetAddress,
+                                                            BRRippleFeeBasis feeBasis)
+{
+    // Use the existing tx create code and just modify the type
+    // This assumes that the correct fee basis was passed in since AccountDelete has
+    // a higher fee.
+    BRRippleTransaction transaction = rippleTransactionCreate(sourceAddress, targetAddress,
+                                                              0, feeBasis);
+    transaction->transactionType = RIPPLE_TX_TYPE_DELETE_ACCOUNT;
+    return transaction;
+
+}
+
 extern BRRippleTransaction /* caller must free - rippleTransferFree */
 rippleTransactionCreateFull (BRRippleAddress sourceAddress,
                              BRRippleAddress targetAddress,
@@ -268,7 +280,7 @@ extern void rippleTransactionFree(BRRippleTransaction transaction)
 }
 
 int setFieldInfo(BRRippleField *fields, BRRippleTransaction transaction,
-                  uint8_t * signature, int sig_length)
+                  uint8_t * signature, size_t sig_length)
 {
     int index = 0;
     
@@ -294,9 +306,12 @@ int setFieldInfo(BRRippleField *fields, BRRippleTransaction transaction,
     fields[index].fieldCode = 3;
     fields[index++].data.address = transaction->payment.targetAddress;
 
-    fields[index].typeCode = 6;
-    fields[index].fieldCode = 1;
-    fields[index++].data.i64 = transaction->payment.amount.amount.u64Amount; // XRP only
+    // For Payments we need an amount, not true for DeleteAccount
+    if (transaction->transactionType == RIPPLE_TX_TYPE_PAYMENT) {
+        fields[index].typeCode = 6;
+        fields[index].fieldCode = 1;
+        fields[index++].data.i64 = transaction->payment.amount.amount.u64Amount; // XRP only
+    }
 
     // Public key info
     fields[index].typeCode = 7;
@@ -348,10 +363,11 @@ static uint64_t calculateFee(BRRippleTransaction transaction)
  */
 static BRRippleSerializedTransaction
 rippleTransactionSerializeImpl (BRRippleTransaction transaction,
-                            uint8_t *signature, int sig_length)
+                            uint8_t *signature, size_t sig_length)
 {
     assert(transaction);
-    assert(transaction->transactionType == RIPPLE_TX_TYPE_PAYMENT);
+    assert(transaction->transactionType == RIPPLE_TX_TYPE_PAYMENT ||
+           transaction->transactionType == RIPPLE_TX_TYPE_DELETE_ACCOUNT);
     // NOTE - the address fields will hold a BRRippleAddress pointer BUT
     // they are owned by the the transaction or transfer so we don't need
     // to worry about the memory.
@@ -421,6 +437,7 @@ rippleTransactionSerializeAndSign(BRRippleTransaction transaction, BRKey * priva
     BRRippleSerializedTransaction serializedBytes = rippleTransactionSerializeImpl (transaction, 0, 0);
     BRRippleSignature sig = signBytes(privateKey, serializedBytes->buffer, serializedBytes->size);
 
+    // Serialize again with the signature
     transaction->signedBytes = rippleTransactionSerializeImpl(transaction, sig->signature, sig->sig_length);
     
     rippleSignatureDelete(sig);
