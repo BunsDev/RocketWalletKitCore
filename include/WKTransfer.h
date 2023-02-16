@@ -168,6 +168,9 @@ wkTransferGetDirection (WKTransfer transfer);
 extern const char *
 wkTransferGetIdentifier (WKTransfer transfer);
 
+extern const char *
+wkTransferGetExchangeId (WKTransfer transfer);
+
 /**
  * Returns the transfer's hash.  The hash is determined by applying a blockchain-specific hash
  * function to a blockchain-specific byte-serialized representation of a Transfer.  A hash is

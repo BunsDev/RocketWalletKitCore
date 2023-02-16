@@ -360,6 +360,12 @@ wkTransferGetAmountAsSign (WKTransfer transfer, WKBoolean isNegative) {
                                                                  wkAmountGetValue(transfer->amount));
 }
 
+extern const char *
+wkTransferGetExchangeId (WKTransfer transfer) {
+    return transfer->exchangeId;
+}
+
+
 extern WKAmount
 wkTransferGetAmount (WKTransfer transfer) {
     return wkAmountTake (transfer->amount);

@@ -1198,6 +1198,7 @@ wkClientQRYSubmitTransfer (WKClientQRYManager qry,
                                        manager,
                                        callbackState,
                                        wkTransferGetIdentifier(transfer),
+                                       wkTransferGetExchangeId(transfer),
                                        serialization,
                                        serializationCount);
 

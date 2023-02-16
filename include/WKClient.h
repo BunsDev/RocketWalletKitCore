@@ -301,6 +301,7 @@ typedef void
                                       OwnershipGiven WKWalletManager manager,
                                       OwnershipGiven WKClientCallbackState callbackState,
                                       OwnershipKept const char    *identifier,
+                                      OwnershipKept const char    *exchangeId,
                                       OwnershipKept const uint8_t *transaction,
                                       size_t transactionLength);
 
