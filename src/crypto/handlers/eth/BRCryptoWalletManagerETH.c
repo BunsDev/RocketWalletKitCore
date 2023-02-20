@@ -863,6 +863,9 @@ cryptoWalletManagerRecoverTransferFromTransferBundleETH (BRCryptoWalletManager m
     // If we have a currency, ensure that we also have an ERC20 token
     if (NULL != currency)
         cryptoWalletManagerEnsureTokenForCurrency (managerETH, currency);
+    
+    // If we have a fee, we'll check if we sent the transfer and, if so, need a transfer
+    bool hasFee = (NULL != bundle->fee);
 
     UInt256  amountETH;
     uint64_t gasLimit;
@@ -943,7 +946,7 @@ cryptoWalletManagerRecoverTransferFromTransferBundleETH (BRCryptoWalletManager m
         }
 
         // We pay the fee
-        bool paysFee = (ETHEREUM_BOOLEAN_TRUE == ethAccountHasAddress (accountETH, ethAddressCreate(bundle->from)));
+        bool paysFee = hasFee && (ETHEREUM_BOOLEAN_TRUE == ethAccountHasAddress (accountETH, ethAddressCreate(bundle->from)));
 
         // If we pay the fee but don't have a currency, then we'll need a transfer with a zero amount.
         if (NULL == amount && paysFee)
