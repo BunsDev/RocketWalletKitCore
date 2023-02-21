@@ -325,6 +325,13 @@ typedef void
                                       OwnershipKept const uint8_t *transaction,
                                       size_t transactionLength);
 
+extern void
+wkClientAnnounceSubmitTransfer (OwnershipKept WKWalletManager cwm,
+                                    OwnershipGiven WKClientCallbackState callbackState,
+                                    OwnershipKept const char *identifier,
+                                    OwnershipKept const char *hash,
+                                    WKBoolean success);
+
 /**
  * Announce the result of the submission.
  */
@@ -434,7 +441,7 @@ wkClientAnnounceCurrenciesFailure (WKSystem system,
                                    WKClientError error);
 
 extern void
-cryptoClientAnnounceCurrencies (WKSystem system,
+wkClientAnnounceCurrencies (WKSystem system,
                                 OwnershipGiven WKClientCurrencyBundle *bundles,
                                 size_t bundlesCount);
 
