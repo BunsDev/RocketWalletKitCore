@@ -587,13 +587,6 @@ typedef struct {
     BRArrayOf (WKClientTransactionBundle) bundles;
 } WKClientAnnounceTransactionsEvent;
 
-static int
-wkClientTransactionBundleCompareForSort (const void *v1, const void *v2) {
-    const WKClientTransactionBundle *b1 = v1;
-    const WKClientTransactionBundle *b2 = v2;
-    return wkClientTransactionBundleCompare (*b1, *b2);
-}
-
 extern void
 wkClientHandleTransactions (OwnershipKept WKWalletManager manager,
                                 OwnershipGiven WKClientCallbackState callbackState,
@@ -723,13 +716,6 @@ typedef struct {
     WKBoolean success;
     BRArrayOf (WKClientTransferBundle) bundles;
 } WKClientAnnounceTransfersEvent;
-
-static int
-wkClientTransferBundleCompareForSort (const void *v1, const void *v2) {
-    const WKClientTransferBundle *b1 = v1;
-    const WKClientTransferBundle *b2 = v2;
-    return wkClientTransferBundleCompare (*b1, *b2);
-}
 
 extern void
 wkClientHandleTransfers (OwnershipKept WKWalletManager manager,
@@ -1326,6 +1312,16 @@ wkClientTransferBundleCompare (const WKClientTransferBundle b1,
                    : (b1->blockTransactionIndex > b2->blockTransactionIndex
                       ? +1
                       :  0))));
+}
+
+extern int
+wkClientTransferBundleCompareByBlockheight (const WKClientTransferBundle b1,
+                                            const WKClientTransferBundle b2) {
+    return (b1->blockNumber < b2-> blockNumber
+            ? -1
+            : (b1->blockNumber > b2->blockNumber
+               ? +1
+               :  0));
 }
 
 extern WKTransferState

@@ -64,6 +64,20 @@ extern int
 wkClientTransactionBundleCompare (const WKClientTransactionBundle b1,
                                       const WKClientTransactionBundle b2);
 
+static inline int
+wkClientTransactionBundleCompareForSort (const void *v1, const void *v2) {
+    const WKClientTransactionBundle *b1 = v1;
+    const WKClientTransactionBundle *b2 = v2;
+    return wkClientTransactionBundleCompare (*b1, *b2);
+}
+
+static inline int
+wkClientTransactionBundleCompareByBlockheightForSort (const void *tb1, const void *tb2) {
+    WKClientTransactionBundle b1 = * (WKClientTransactionBundle *) tb1;
+    WKClientTransactionBundle b2 = * (WKClientTransactionBundle *) tb2;
+    return wkClientTransactionBundleCompare (b1, b2);
+}
+
 extern void
 wkClientAnnounceTransactions (OwnershipKept WKWalletManager cwm,
                                   OwnershipGiven WKClientCallbackState callbackState,
@@ -109,6 +123,24 @@ wkClientTransferBundleRelease (WKClientTransferBundle bundle);
 extern int
 wkClientTransferBundleCompare (const WKClientTransferBundle b1,
                                    const WKClientTransferBundle b2);
+
+static inline int
+wkClientTransferBundleCompareForSort (const void *v1, const void *v2) {
+    const WKClientTransferBundle *b1 = v1;
+    const WKClientTransferBundle *b2 = v2;
+    return wkClientTransferBundleCompare (*b1, *b2);
+}
+
+extern int
+wkClientTransferBundleCompareByBlockheight (const WKClientTransferBundle b1,
+                                                const WKClientTransferBundle b2);
+
+static inline int
+wkClientTransferBundleCompareByBlockheightForSort (const void *tb1, const void *tb2) {
+    WKClientTransferBundle b1 = * (WKClientTransferBundle *) tb1;
+    WKClientTransferBundle b2 = * (WKClientTransferBundle *) tb2;
+    return wkClientTransferBundleCompareByBlockheight (b1, b2);
+}
 
 extern WKTransferState
 wkClientTransferBundleGetTransferState (const WKClientTransferBundle bundle,

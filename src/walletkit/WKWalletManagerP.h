@@ -308,10 +308,6 @@ wkWalletManagerRecoverFeeBasisFromFeeEstimate (WKWalletManager cwm,
                                                OwnershipKept const char **attributeKeys,
                                                OwnershipKept const char **attributeVals);
 
-private_extern void
-wkWalletManagerAnnounceClientError (WKWalletManager manager,
-                                    OwnershipGiven WKClientError error);
-
 static inline void
 wkWalletManagerGenerateEvent (WKWalletManager manager,
                                   WKWalletManagerEvent event) {
