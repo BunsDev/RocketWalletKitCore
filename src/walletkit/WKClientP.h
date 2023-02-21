@@ -1,6 +1,6 @@
 //
 //  WKClientP.h
-//  WalletKitCore
+//  BRCore
 //
 //  Created by Ed Gamble on 04/28/2020.
 //  Copyright © 2019 Breadwinner AG. All rights reserved.
@@ -18,7 +18,6 @@
 #include "support/rlp/BRRlp.h"
 #include "support/event/BREvent.h"
 
-#include "WKFileService.h"
 #include "WKClient.h"
 #include "WKSync.h"
 #include "WKTransfer.h"
@@ -27,19 +26,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-// MARK: - Error
-
-struct WKClientErrorRecord {
-    WKClientErrorType type;
-    char *details;
-    union {
-        WKTransferSubmitErrorType submitErrorType;
-    } u;
-};
-
-private_extern void
-wkClientErrorRelease (WKClientError error);
 
 // MARK: - Transaction Bundle
 
@@ -89,15 +75,14 @@ wkClientTransactionBundleSetRelease (BRSetOf(WKClientTransactionBundle) bundles)
 
 struct WKClientTransferBundleRecord {
     WKTransferStateType status;
+    char *uids;
     char *hash;
     char *identifier;
-    char *uids;
     char *from;
     char *to;
     char *amount;
     char *currency;
     char *fee;
-    uint64_t transferIndex;
     WKTimestamp blockTimestamp;
     WKBlockNumber blockNumber;
     WKBlockNumber blockConfirmations;
@@ -115,8 +100,7 @@ wkClientTransferBundleRlpEncode (WKClientTransferBundle bundle,
 
 private_extern WKClientTransferBundle
 wkClientTransferBundleRlpDecode (BRRlpItem item,
-                                 BRRlpCoder coder,
-                                 WKFileServiceTransferVersion version);
+                                     BRRlpCoder coder);
 
 // For BRSet
 private_extern size_t
@@ -212,8 +196,8 @@ struct WKClientCallbackStateRecord {
         struct {
             WKHash hash;
             WKCookie cookie;
-            WKTransfer   transfer;
             WKNetworkFee networkFee;
+            WKFeeBasis initialFeeBasis;
         } estimateTransactionFee;
         // ...
     } u;
@@ -396,7 +380,8 @@ extern void
 wkClientQRYEstimateTransferFee (WKClientQRYManager qry,
                                     WKCookie   cookie,
                                     WKTransfer transfer,
-                                    WKNetworkFee networkFee);
+                                    WKNetworkFee networkFee,
+                                    WKFeeBasis initialFeeBasis);
 
 static inline WKClientSync
 wkClientQRYManagerAsSync (WKClientQRYManager qry) {
