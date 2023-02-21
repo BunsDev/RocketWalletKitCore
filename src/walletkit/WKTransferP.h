@@ -140,6 +140,8 @@ struct WKTransferRecord {
     ///
     /// The identifier can be NULL.
     char *identifier;
+    
+    char *exchangeId;
 
     /// The source address sent the amount and paid the fee.
     WKAddress sourceAddress;
@@ -216,6 +218,9 @@ private_extern void
 wkTransferSetAttributes (WKTransfer transfer,
                              size_t attributesCount,
                              OwnershipKept WKTransferAttribute *attributes);
+
+private_extern void
+wkTransferSetExchangeId (WKTransfer transfer, const char* exchangeId);
 
 private_extern void
 wkTransferAttributeArrayRelease (BRArrayOf(WKTransferAttribute) attributes);

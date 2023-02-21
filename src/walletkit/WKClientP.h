@@ -115,8 +115,7 @@ wkClientTransferBundleRlpEncode (WKClientTransferBundle bundle,
 
 private_extern WKClientTransferBundle
 wkClientTransferBundleRlpDecode (BRRlpItem item,
-                                 BRRlpCoder coder,
-                                 WKFileServiceTransferVersion version);
+                                     BRRlpCoder coder);
 
 // For BRSet
 private_extern size_t
@@ -214,6 +213,7 @@ struct WKClientCallbackStateRecord {
             WKCookie cookie;
             WKTransfer   transfer;
             WKNetworkFee networkFee;
+            WKFeeBasis initialFeeBasis;
         } estimateTransactionFee;
         // ...
     } u;

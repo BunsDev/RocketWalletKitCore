@@ -179,6 +179,9 @@ typedef struct {
 } WKTransferSubmitError;
 
 extern WKTransferSubmitError
+wkTransferSubmitErrorUnknown(void);
+
+extern WKTransferSubmitError
 wkTransferSubmitErrorCreate (WKTransferSubmitErrorType type, const char *details);
 
 extern const char *

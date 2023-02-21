@@ -216,6 +216,10 @@ wkNetworkSetVerifiedBlockHashAsString (WKNetwork network,
 extern uint32_t
 wkNetworkGetConfirmationsUntilFinal (WKNetwork network);
 
+extern void
+wkNetworkSetConfirmationsUntilFinal (WKNetwork network,
+                                             uint32_t confirmationsUntilFinal);
+
 /**
  * Returns the number of network currencies.  This is the index exclusive limit to be used
  * in `wkNetworkGetCurrencyAt()`.

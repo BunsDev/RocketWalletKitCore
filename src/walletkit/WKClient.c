@@ -538,56 +538,53 @@ typedef struct {
     BREvent base;
     WKWalletManager manager;
     WKClientCallbackState callbackState;
+    WKBoolean success;
     WKBlockNumber blockNumber;
     char * blockHashString;
-    WKClientError error;
 } WKClientAnnounceBlockNumberEvent;
 
 static void
-wkClientHandleBlockNumber (OwnershipKept WKWalletManager manager,
-                           OwnershipGiven WKClientCallbackState callbackState,
-                           WKBlockNumber blockNumber,
-                           char *blockHashString,
-                           OwnershipGiven WKClientError error) {
+wkClientHandleBlockNumber (OwnershipKept WKWalletManager cwm,
+                               OwnershipGiven WKClientCallbackState callbackState,
+                               WKBoolean success,
+                               WKBlockNumber blockNumber,
+                               char *blockHashString) {
 
-    if (NULL == error) {
-        WKBlockNumber oldBlockNumber = wkNetworkGetHeight (manager->network);
+    WKBlockNumber oldBlockNumber = wkNetworkGetHeight (cwm->network);
 
-        if (oldBlockNumber != blockNumber) {
-            wkNetworkSetHeight (manager->network, blockNumber);
+    if (oldBlockNumber != blockNumber) {
+        wkNetworkSetHeight (cwm->network, blockNumber);
 
-            if (NULL != blockHashString && '\0' != blockHashString[0]) {
-                WKHash verifiedBlockHash = wkNetworkCreateHashFromString (manager->network, blockHashString);
-                wkNetworkSetVerifiedBlockHash (manager->network, verifiedBlockHash);
-                wkHashGive (verifiedBlockHash);
-            }
-
-            wkWalletManagerGenerateEvent (manager, (WKWalletManagerEvent) {
-                WK_WALLET_MANAGER_EVENT_BLOCK_HEIGHT_UPDATED,
-                { .blockHeight = blockNumber }
-            });
+        if (NULL != blockHashString && '\0' != blockHashString[0]) {
+            WKHash verifiedBlockHash = wkNetworkCreateHashFromString (cwm->network, blockHashString);
+            wkNetworkSetVerifiedBlockHash (cwm->network, verifiedBlockHash);
+            wkHashGive (verifiedBlockHash);
         }
 
-        wkClientCallbackStateRelease (callbackState);
-        wkMemoryFree(blockHashString);
+        wkWalletManagerGenerateEvent (cwm, (WKWalletManagerEvent) {
+            WK_WALLET_MANAGER_EVENT_BLOCK_HEIGHT_UPDATED,
+            { .blockHeight = blockNumber }
+        });
     }
+
+    wkClientCallbackStateRelease (callbackState);
+    wkMemoryFree(blockHashString);
 
     // After getting any block number, whether successful or not, do a sync.  The sync will be
     // incremental or full - depending on where the last sync ended.
-    wkClientQRYRequestSync (manager->qryManager, true);
-
-    wkWalletManagerAnnounceClientError (manager, error);
+    wkClientQRYRequestSync (cwm->qryManager, true);
 }
 
 static void
 wkClientAnnounceBlockNumberDispatcher (BREventHandler ignore,
-                                       WKClientAnnounceBlockNumberEvent *event) {
+                                           WKClientAnnounceBlockNumberEvent *event) {
     wkClientHandleBlockNumber (event->manager,
-                               event->callbackState,
-                               event->blockNumber,
-                               event->blockHashString,
-                               event->error);
+                                   event->callbackState,
+                                   event->success,
+                                   event->blockNumber,
+                                   event->blockHashString);
 }
+
 
 static void
 wkClientAnnounceBlockNumberDestroyer (WKClientAnnounceBlockNumberEvent *event) {
@@ -602,6 +599,23 @@ BREventType handleClientAnnounceBlockNumberEventType = {
     (BREventDispatcher) wkClientAnnounceBlockNumberDispatcher,
     (BREventDestroyer) wkClientAnnounceBlockNumberDestroyer
 };
+
+extern void
+wkClientAnnounceBlockNumber (OwnershipKept WKWalletManager cwm,
+                               OwnershipGiven WKClientCallbackState callbackState,
+                               WKBoolean success,
+                               WKBlockNumber blockNumber,
+                               const char *blockHashString) {
+    WKClientAnnounceBlockNumberEvent event =
+    { { NULL, &handleClientAnnounceBlockNumberEventType },
+        wkWalletManagerTakeWeak(cwm),
+        callbackState,
+        success,
+        blockNumber,
+        (NULL == blockHashString ? NULL : strdup (blockHashString)) };
+
+    eventHandlerSignalEvent (cwm->handler, (BREvent *) &event);
+}
 
 extern void
 wkClientAnnounceBlockNumberSuccess (OwnershipKept WKWalletManager cwm,
@@ -657,15 +671,15 @@ typedef struct {
     BREvent base;
     WKWalletManager manager;
     WKClientCallbackState callbackState;
+    WKBoolean success;
     BRArrayOf (WKClientTransactionBundle) bundles;
-    WKClientError error;
 } WKClientAnnounceTransactionsEvent;
 
 extern void
 wkClientHandleTransactions (OwnershipKept WKWalletManager manager,
-                            OwnershipGiven WKClientCallbackState callbackState,
-                            BRArrayOf (WKClientTransactionBundle) bundles,
-                            OwnershipGiven WKClientError error) {
+                                OwnershipGiven WKClientCallbackState callbackState,
+                                WKBoolean success,
+                                BRArrayOf (WKClientTransactionBundle) bundles) {
 
     WKClientQRYManager qry = manager->qryManager;
 
@@ -678,71 +692,73 @@ wkClientHandleTransactions (OwnershipKept WKWalletManager manager,
 
     // Process the results if the bundles are for our rid; otherwise simply discard;
     if (matchedRids) {
-        if (NULL == error) {
-            size_t bundlesCount = array_count(bundles);
+        switch (success) {
+            case WK_TRUE: {
+                size_t bundlesCount = array_count(bundles);
 
-            // Save the transaction bundles immediately
-            for (size_t index = 0; index < bundlesCount; index++)
-                wkWalletManagerSaveTransactionBundle(manager, bundles[index]);
+                // Save the transaction bundles immediately
+                for (size_t index = 0; index < bundlesCount; index++)
+                    wkWalletManagerSaveTransactionBundle(manager, bundles[index]);
 
-            // Sort bundles to have the lowest blocknumber first.  Use of `mergesort` is
-            // appropriate given that the bundles are likely already ordered.  This minimizes
-            // dependency resolution between later transactions depending on prior transactions.
-            //
-            // Seems that there may be duplicates in `bundles`; will be dealt with later
+                // Sort bundles to have the lowest blocknumber first.  Use of `mergesort` is
+                // appropriate given that the bundles are likely already ordered.  This minimizes
+                // dependency resolution between later transactions depending on prior transactions.
+                //
+                // Seems that there may be duplicates in `bundles`; will be dealt with later
 
-            mergesort_brd (bundles, bundlesCount, sizeof (WKClientTransactionBundle),
-                           wkClientTransactionBundleCompareForSort);
+                mergesort_brd (bundles, bundlesCount, sizeof (WKClientTransactionBundle),
+                               wkClientTransactionBundleCompareForSort);
 
-            // Recover transfers from each bundle
-            for (size_t index = 0; index < bundlesCount; index++)
-                wkWalletManagerRecoverTransfersFromTransactionBundle (manager, bundles[index]);
+                // Recover transfers from each bundle
+                for (size_t index = 0; index < bundlesCount; index++)
+                   wkWalletManagerRecoverTransfersFromTransactionBundle (manager, bundles[index]);
 
-            // The following assumes `bundles` has produced transfers which may have
-            // impacted the wallet's addresses.  Thus the recovery must be *serial w.r.t. the
-            // subsequent call to `wkClientQRYRequestTransactionsOrTransfers()`.
+                // The following assumes `bundles` has produced transfers which may have
+                // impacted the wallet's addresses.  Thus the recovery must be *serial w.r.t. the
+                // subsequent call to `cryptoClientQRYRequestTransactionsOrTransfers()`.
 
-            WKWallet wallet = wkWalletManagerGetWallet(manager);
+                WKWallet wallet = wkWalletManagerGetWallet(manager);
 
-            // We've completed a query for `oldAddresses`
-            BRSetOf(WKAddress) oldAddresses = callbackState->u.getTransactions.addresses;
+                // We've completed a query for `oldAddresses`
+                BRSetOf(WKAddress) oldAddresses = callbackState->u.getTransactions.addresses;
 
-            // We'll need another query if `newAddresses` is now larger then `oldAddresses`
-            BRSetOf(WKAddress) newAddresses = wkWalletGetAddressesForRecovery (wallet);
+                // We'll need another query if `newAddresses` is now larger then `oldAddresses`
+                BRSetOf(WKAddress) newAddresses = wkWalletGetAddressesForRecovery (wallet);
 
-            // Make the actual request; if none is needed, then we are done
-            if (!wkClientQRYRequestTransactionsOrTransfers (qry,
-                                                            CLIENT_CALLBACK_REQUEST_TRANSACTIONS,
-                                                            oldAddresses,
-                                                            newAddresses,
-                                                            callbackState->rid)) {
+                // Make the actual request; if none is needed, then we are done
+                if (!wkClientQRYRequestTransactionsOrTransfers (qry,
+                                                                    CLIENT_CALLBACK_REQUEST_TRANSACTIONS,
+                                                                    oldAddresses,
+                                                                    newAddresses,
+                                                                    callbackState->rid)) {
+                    syncCompleted = true;
+                    syncSuccess   = true;
+                }
+
+                wkWalletGive (wallet);
+                break;
+
+            case WK_FALSE:
                 syncCompleted = true;
-                syncSuccess   = true;
+                syncSuccess   = false;
+                break;
             }
-
-            wkWalletGive (wallet);
-        }
-        else {
-            syncCompleted = true;
-            syncSuccess   = false;
         }
     }
 
     wkClientQRYManagerUpdateSync (qry, syncCompleted, syncSuccess, true);
 
-    if (NULL != bundles) array_free_all (bundles, wkClientTransactionBundleRelease);
+    array_free_all (bundles, wkClientTransactionBundleRelease);
     wkClientCallbackStateRelease(callbackState);
-
-    wkWalletManagerAnnounceClientError (manager, error);
 }
 
 static void
 wkClientAnnounceTransactionsDispatcher (BREventHandler ignore,
                                             WKClientAnnounceTransactionsEvent *event) {
     wkClientHandleTransactions (event->manager,
-                                event->callbackState,
-                                event->bundles,
-                                event->error);
+                                    event->callbackState,
+                                    event->success,
+                                    event->bundles);
 }
 
 static void
@@ -758,6 +774,27 @@ BREventType handleClientAnnounceTransactionsEventType = {
     (BREventDispatcher) wkClientAnnounceTransactionsDispatcher,
     (BREventDestroyer) wkClientAnnounceTransactionsDestroyer
 };
+
+extern void
+wkClientAnnounceTransactions (OwnershipKept WKWalletManager manager,
+                                  OwnershipGiven WKClientCallbackState callbackState,
+                                  WKBoolean success,
+                                  WKClientTransactionBundle *bundles,  // given elements, not array
+                                  size_t bundlesCount) {
+    BRArrayOf (WKClientTransactionBundle) eventBundles;
+    array_new (eventBundles, bundlesCount);
+    array_add_array (eventBundles, bundles, bundlesCount);
+
+    WKClientAnnounceTransactionsEvent event =
+    { { NULL, &handleClientAnnounceTransactionsEventType },
+        wkWalletManagerTakeWeak(manager),
+        callbackState,
+        success,
+        eventBundles };
+
+    eventHandlerSignalEvent (manager->handler, (BREvent *) &event);
+}
+
 
 extern void
 wkClientAnnounceTransactionsSuccess (OwnershipKept WKWalletManager manager,
@@ -798,15 +835,16 @@ typedef struct {
     BREvent base;
     WKWalletManager manager;
     WKClientCallbackState callbackState;
+    WKBoolean success;
     BRArrayOf (WKClientTransferBundle) bundles;
-    WKClientError error;
 } WKClientAnnounceTransfersEvent;
 
 extern void
 wkClientHandleTransfers (OwnershipKept WKWalletManager manager,
-                         OwnershipGiven WKClientCallbackState callbackState,
-                         BRArrayOf (WKClientTransferBundle) bundles,
-                         OwnershipGiven WKClientError error) {
+                                OwnershipGiven WKClientCallbackState callbackState,
+                                WKBoolean success,
+                                BRArrayOf (WKClientTransferBundle) bundles) {
+
 
     WKClientQRYManager qry = manager->qryManager;
 
@@ -819,66 +857,67 @@ wkClientHandleTransfers (OwnershipKept WKWalletManager manager,
 
     // Process the results if the bundles are for our rid; otherwise simply discard;
     if (matchedRids) {
-        if (NULL == error) {
-            size_t bundlesCount = array_count(bundles);
+        switch (success) {
+            case WK_TRUE: {
+                size_t bundlesCount = array_count(bundles);
 
-            for (size_t index = 0; index < bundlesCount; index++)
-                wkWalletManagerSaveTransferBundle(manager, bundles[index]);
+                for (size_t index = 0; index < bundlesCount; index++)
+                    wkWalletManagerSaveTransferBundle(manager, bundles[index]);
 
-            // Sort bundles to have the lowest blocknumber first.  Use of `mergesort` is
-            // appropriate given that the bundles are likely already ordered.  This minimizes
-            // dependency resolution between later transfers depending on prior transfers.
+                // Sort bundles to have the lowest blocknumber first.  Use of `mergesort` is
+                // appropriate given that the bundles are likely already ordered.  This minimizes
+                // dependency resolution between later transfers depending on prior transfers.
 
-            mergesort_brd (bundles, bundlesCount, sizeof (WKClientTransferBundle),
-                           wkClientTransferBundleCompareForSort);
+                mergesort_brd (bundles, bundlesCount, sizeof (WKClientTransferBundle),
+                               wkClientTransferBundleCompareForSort);
 
-            // Recover transfers from each bundle
-            for (size_t index = 0; index < bundlesCount; index++)
-                wkWalletManagerRecoverTransferFromTransferBundle (manager, bundles[index]);
+                // Recover transfers from each bundle
+                for (size_t index = 0; index < bundlesCount; index++)
+                   wkWalletManagerRecoverTransferFromTransferBundle (manager, bundles[index]);
 
-            WKWallet wallet = wkWalletManagerGetWallet(manager);
+                WKWallet wallet = wkWalletManagerGetWallet(manager);
 
-            // We've completed a query for `oldAddresses`
-            BRSetOf(WKAddress) oldAddresses = callbackState->u.getTransactions.addresses;
+                // We've completed a query for `oldAddresses`
+                BRSetOf(WKAddress) oldAddresses = callbackState->u.getTransactions.addresses;
 
-            // We'll need another query if `newAddresses` is now larger then `oldAddresses`
-            BRSetOf(WKAddress) newAddresses = wkWalletGetAddressesForRecovery (wallet);
+                // We'll need another query if `newAddresses` is now larger then `oldAddresses`
+                BRSetOf(WKAddress) newAddresses = wkWalletGetAddressesForRecovery (wallet);
 
-            // Make the actual request; if none is needed, then we are done.  Use the
-            // same `rid` as we are in the same sync.
-            if (!wkClientQRYRequestTransactionsOrTransfers (qry,
-                                                            CLIENT_CALLBACK_REQUEST_TRANSFERS,
-                                                            oldAddresses,
-                                                            newAddresses,
-                                                            callbackState->rid)) {
+                // Make the actual request; if none is needed, then we are done.  Use the
+                // same `rid` as we are in the same sync.
+                if (!wkClientQRYRequestTransactionsOrTransfers (qry,
+                                                                    CLIENT_CALLBACK_REQUEST_TRANSFERS,
+                                                                    oldAddresses,
+                                                                    newAddresses,
+                                                                    callbackState->rid)) {
+                    syncCompleted = true;
+                    syncSuccess   = true;
+                }
+
+                wkWalletGive (wallet);
+                break;
+
+            case WK_FALSE:
                 syncCompleted = true;
-                syncSuccess   = true;
+                syncSuccess   = false;
+                break;
             }
-
-            wkWalletGive (wallet);
-        }
-
-        else {
-            syncCompleted = true;
-            syncSuccess   = false;
         }
     }
 
     wkClientQRYManagerUpdateSync (qry, syncCompleted, syncSuccess, true);
 
-    if (NULL != bundles) array_free_all (bundles, wkClientTransferBundleRelease);
+    array_free_all (bundles, wkClientTransferBundleRelease);
     wkClientCallbackStateRelease(callbackState);
-
-    wkWalletManagerAnnounceClientError (manager, error);
 }
 
 static void
 wkClientAnnounceTransfersDispatcher (BREventHandler ignore,
-                                     WKClientAnnounceTransfersEvent *event) {
+                                            WKClientAnnounceTransfersEvent *event) {
     wkClientHandleTransfers (event->manager,
-                             event->callbackState,
-                             event->bundles,
-                             event->error);
+                                    event->callbackState,
+                                    event->success,
+                                    event->bundles);
 }
 
 static void
@@ -895,6 +934,25 @@ BREventType handleClientAnnounceTransfersEventType = {
     (BREventDestroyer) wkClientAnnounceTransfersDestroyer
 };
 
+extern void
+wkClientAnnounceTransfers (OwnershipKept WKWalletManager manager,
+                               OwnershipGiven WKClientCallbackState callbackState,
+                               WKBoolean success,
+                               OwnershipGiven WKClientTransferBundle *bundles, // given elements, not array
+                               size_t bundlesCount) {
+    BRArrayOf (WKClientTransferBundle) eventBundles;
+    array_new (eventBundles, bundlesCount);
+    array_add_array (eventBundles, bundles, bundlesCount);
+
+    WKClientAnnounceTransfersEvent event =
+    { { NULL, &handleClientAnnounceTransfersEventType },
+        wkWalletManagerTakeWeak(manager),
+        callbackState,
+        success,
+        eventBundles };
+
+    eventHandlerSignalEvent (manager->handler, (BREvent *) &event);
+}
 
 extern void
 wkClientAnnounceTransfersSuccess (OwnershipKept WKWalletManager manager,
@@ -1036,7 +1094,7 @@ typedef struct {
     WKClientCallbackState callbackState;
     char *identifier;
     char *hash;
-    WKClientError error;
+    WKBoolean success;
 } WKClientAnnounceSubmitEvent;
 
 static WKTransferSubmitError
@@ -1061,19 +1119,19 @@ wkClientErrorToSubmitError (WKWalletManager manager,
 
 static void
 wkClientHandleSubmit (OwnershipKept WKWalletManager manager,
-                      OwnershipGiven WKClientCallbackState callbackState,
-                      OwnershipKept char *identifierStr,
-                      OwnershipKept char *hashStr,
-                      OwnershipGiven WKClientError error) {
+                          OwnershipGiven WKClientCallbackState callbackState,
+                          OwnershipKept char *identifierStr,
+                          OwnershipKept char *hashStr,
+                          WKBoolean success) {
     assert (CLIENT_CALLBACK_SUBMIT_TRANSACTION == callbackState->type);
 
     WKWallet   wallet   = callbackState->u.submitTransaction.wallet;
     WKTransfer transfer = callbackState->u.submitTransaction.transfer;
 
     // Get the transfer state
-    WKTransferState transferState = (NULL == error
-                                     ? wkTransferStateInit (WK_TRANSFER_STATE_SUBMITTED)
-                                     : wkTransferStateErroredInit (wkClientErrorToSubmitError (manager, error)));
+    WKTransferState transferState = (WK_TRUE == success
+                                           ? wkTransferStateInit (WK_TRANSFER_STATE_SUBMITTED)
+                                           : wkTransferStateErroredInit (wkTransferSubmitErrorUnknown()));
 
     // Recover the `state` as either SUBMITTED or a UNKNOWN ERROR.  We have a slight issue, as
     // a possible race condition, whereby the transfer can already be INCLUDED by the time this
@@ -1119,18 +1177,15 @@ wkClientHandleSubmit (OwnershipKept WKWalletManager manager,
     wkClientCallbackStateRelease(callbackState);
     wkMemoryFree (identifierStr);
     wkMemoryFree (hashStr);
-
-    wkWalletManagerAnnounceClientError (manager, error);
 }
-
 static void
 wkClientAnnounceSubmitDispatcher (BREventHandler ignore,
-                                  WKClientAnnounceSubmitEvent *event) {
+                                      WKClientAnnounceSubmitEvent *event) {
     wkClientHandleSubmit (event->manager,
-                          event->callbackState,
-                          event->identifier,
-                          event->hash,
-                          event->error);
+                              event->callbackState,
+                              event->identifier,
+                              event->hash,
+                              event->success);
 }
 
 static void
@@ -1147,6 +1202,23 @@ BREventType handleClientAnnounceSubmitEventType = {
     (BREventDispatcher) wkClientAnnounceSubmitDispatcher,
     (BREventDestroyer) wkClientAnnounceSubmitDestroyer
 };
+
+extern void
+wkClientAnnounceSubmitTransfer (OwnershipKept WKWalletManager manager,
+                                    OwnershipGiven WKClientCallbackState callbackState,
+                                    OwnershipKept const char *identifier,
+                                    OwnershipKept const char *hash,
+                                    WKBoolean success) {
+    WKClientAnnounceSubmitEvent event =
+    { { NULL, &handleClientAnnounceSubmitEventType },
+        wkWalletManagerTakeWeak(manager),
+        callbackState,
+        (NULL == identifier ? NULL : strdup(identifier)),
+        (NULL == hash ? NULL : strdup (hash)),
+        success };
+
+    eventHandlerSignalEvent (manager->handler, (BREvent *) &event);
+}
 
 extern void
 wkClientAnnounceSubmitTransferSuccess (OwnershipKept WKWalletManager manager,
@@ -1198,6 +1270,7 @@ wkClientQRYSubmitTransfer (WKClientQRYManager qry,
                                        manager,
                                        callbackState,
                                        wkTransferGetIdentifier(transfer),
+                                       wkTransferGetExchangeId(transfer),
                                        serialization,
                                        serializationCount);
 
@@ -1210,69 +1283,56 @@ typedef struct {
     BREvent base;
     WKWalletManager manager;
     WKClientCallbackState callbackState;
+    WKBoolean success;
     uint64_t costUnits;
     BRArrayOf(char*) keys;
     BRArrayOf(char*) vals;
-    WKClientError error;
 } WKClientAnnounceEstimateTransactionFeeEvent;
 
 static void
 wkClientHandleEstimateTransactionFee (OwnershipKept WKWalletManager manager,
-                                      OwnershipGiven WKClientCallbackState callbackState,
-                                      uint64_t costUnits,
-                                      BRArrayOf(char*) attributeKeys,
-                                      BRArrayOf(char*) attributeVals,
-                                      OwnershipGiven WKClientError error) {
+                                          OwnershipGiven WKClientCallbackState callbackState,
+                                          WKBoolean success,
+                                          uint64_t costUnits,
+                                          BRArrayOf(char*) attributeKeys,
+                                          BRArrayOf(char*) attributeVals) {
     assert (CLIENT_CALLBACK_ESTIMATE_TRANSACTION_FEE == callbackState->type);
 
-    WKStatus status = (NULL == error ? WK_SUCCESS : WK_ERROR_FAILED);
+    WKStatus status = (WK_TRUE == success ? WK_SUCCESS : WK_ERROR_FAILED);
+    WKCookie cookie = callbackState->u.estimateTransactionFee.cookie;
 
-    WKCookie     cookie     = callbackState->u.estimateTransactionFee.cookie;
-    WKTransfer   transfer   = callbackState->u.estimateTransactionFee.transfer;
     WKNetworkFee networkFee = callbackState->u.estimateTransactionFee.networkFee;
+    WKFeeBasis initialFeeBasis = callbackState->u.estimateTransactionFee.initialFeeBasis;
 
-    // Unused
     WKAmount pricePerCostFactor = wkNetworkFeeGetPricePerCostFactor (networkFee);
-
-    // Leave a uint64_t?
     double costFactor = (double) costUnits;
-
     WKFeeBasis feeBasis = NULL;
-    if (WK_SUCCESS == status)
+    if (WK_TRUE == success)
         feeBasis = wkWalletManagerRecoverFeeBasisFromFeeEstimate (manager,
-                                                                  transfer,
-                                                                  networkFee,
-                                                                  costFactor,
-                                                                  array_count(attributeKeys),
-                                                                  (const char**) attributeKeys,
-                                                                  (const char**) attributeVals);
+                                                                      networkFee,
+                                                                      initialFeeBasis,
+                                                                      costFactor,
+                                                                      array_count(attributeKeys),
+                                                                      (const char**) attributeKeys,
+                                                                      (const char**) attributeVals);
 
     wkWalletGenerateEvent (manager->wallet, wkWalletEventCreateFeeBasisEstimated(status, cookie, feeBasis));
 
     wkFeeBasisGive(feeBasis);
-
-    // Unused
     wkAmountGive (pricePerCostFactor);
-
     wkClientCallbackStateRelease (callbackState);
-
-    if (NULL != attributeKeys) array_free_all (attributeKeys, wkMemoryFree);
-    if (NULL != attributeVals) array_free_all (attributeVals, wkMemoryFree);
-
-    wkWalletManagerAnnounceClientError (manager, error);
 }
 
 static void
 wkClientAnnounceEstimateTransactionFeeDispatcher (BREventHandler ignore,
-                                                  WKClientAnnounceEstimateTransactionFeeEvent *event) {
+                                      WKClientAnnounceEstimateTransactionFeeEvent *event) {
     wkClientHandleEstimateTransactionFee (event->manager,
-                                          event->callbackState,
-                                          event->costUnits,
-                                          event->keys,
-                                          event->vals,
-                                          event->error);
+                                              event->callbackState,
+                                              event->success,
+                                              event->costUnits,
+                                              event->keys,
+                                              event->vals);
 }
-
 static void
 wkClientAnnounceEstimateTransactionFeeDestroyer (WKClientAnnounceEstimateTransactionFeeEvent *event) {
     wkWalletManagerGive (event->manager);
@@ -1287,6 +1347,40 @@ BREventType handleClientAnnounceEstimateTransactionFeeEventType = {
     (BREventDispatcher) wkClientAnnounceEstimateTransactionFeeDispatcher,
     (BREventDestroyer) wkClientAnnounceEstimateTransactionFeeDestroyer
 };
+
+extern void
+wkClientAnnounceEstimateTransactionFee (OwnershipKept WKWalletManager manager,
+                                            OwnershipGiven WKClientCallbackState callbackState,
+                                            WKBoolean success,
+                                            uint64_t costUnits,
+                                            size_t attributesCount,
+                                            OwnershipKept const char **attributeKeys,
+                                            OwnershipKept const char **attributeVals) {
+    BRArrayOf(char *) keys;
+    array_new (keys, attributesCount);
+    array_add_array (keys, (char**) attributeKeys, attributesCount);
+
+    BRArrayOf(char *) vals;
+    array_new (vals, attributesCount);
+    array_add_array (vals, (char**) attributeVals, attributesCount);
+
+    for (size_t index = 0; index < attributesCount; index++) {
+        keys[index] = strdup (keys[index]);
+        vals[index] = strdup (vals[index]);
+    }
+
+    WKClientAnnounceEstimateTransactionFeeEvent event =
+    { { NULL, &handleClientAnnounceEstimateTransactionFeeEventType },
+        wkWalletManagerTakeWeak(manager),
+        callbackState,
+        success,
+        costUnits,
+        keys,
+        vals };
+
+    eventHandlerSignalEvent (manager->handler, (BREvent *) &event);
+
+}
 
 extern void
 wkClientAnnounceEstimateTransactionFeeSuccess (OwnershipKept WKWalletManager manager,
@@ -1378,23 +1472,22 @@ wkClientQRYEstimateTransferFee (WKClientQRYManager qry,
 
 extern WKClientTransferBundle
 wkClientTransferBundleCreate (WKTransferStateType status,
-                              OwnershipKept const char */* transaction */ hash,
-                              OwnershipKept const char */* transaction */ identifier,
-                              OwnershipKept const char */* transfer */ uids,
-                              OwnershipKept const char *from,
-                              OwnershipKept const char *to,
-                              OwnershipKept const char *amount,
-                              OwnershipKept const char *currency,
-                              OwnershipKept const char *fee,
-                              uint64_t transferIndex,
-                              uint64_t blockTimestamp,
-                              uint64_t blockNumber,
-                              uint64_t blockConfirmations,
-                              uint64_t blockTransactionIndex,
-                              OwnershipKept const char *blockHash,
-                              size_t attributesCount,
-                              OwnershipKept const char **attributeKeys,
-                              OwnershipKept const char **attributeVals) {
+                                  OwnershipKept const char *uids,
+                                  OwnershipKept const char *hash,
+                                  OwnershipKept const char *identifier,
+                                  OwnershipKept const char *from,
+                                  OwnershipKept const char *to,
+                                  OwnershipKept const char *amount,
+                                  OwnershipKept const char *currency,
+                                  OwnershipKept const char *fee,
+                                  uint64_t blockTimestamp,
+                                  uint64_t blockNumber,
+                                  uint64_t blockConfirmations,
+                                  uint64_t blockTransactionIndex,
+                                  OwnershipKept const char *blockHash,
+                                  size_t attributesCount,
+                                  OwnershipKept const char **attributeKeys,
+                                  OwnershipKept const char **attributeVals) {
     WKClientTransferBundle bundle = calloc (1, sizeof (struct WKClientTransferBundleRecord));
 
     // In the case of an error, as indicated by `status`,  we've got no additional information
@@ -1404,16 +1497,15 @@ wkClientTransferBundleCreate (WKTransferStateType status,
     // so as to avoid simply creating a transaction to cause it again.
 
     bundle->status     = status;
+    bundle->uids       = strdup (uids);
     bundle->hash       = strdup (hash);
     bundle->identifier = strdup (identifier);
-    bundle->uids       = strdup (uids);
     bundle->from     = strdup (from);
     bundle->to       = strdup (to);
     bundle->amount   = strdup (amount);
     bundle->currency = strdup (currency);
     bundle->fee      = NULL == fee ? NULL : strdup (fee);
 
-    bundle->transferIndex = transferIndex;
     bundle->blockTimestamp = blockTimestamp;
     bundle->blockNumber    = blockNumber;
     bundle->blockConfirmations    = blockConfirmations;
@@ -1595,21 +1687,10 @@ wkClientTransferBundleRlpEncode (WKClientTransferBundle bundle,
 
 private_extern WKClientTransferBundle
 wkClientTransferBundleRlpDecode (BRRlpItem item,
-                                 BRRlpCoder coder,
-                                 WKFileServiceTransferVersion version) {
+                                     BRRlpCoder coder) {
     size_t itemsCount;
     const BRRlpItem *items = rlpDecodeList (coder, item, &itemsCount);
-
-    switch (version) {
-        case WK_FILE_SERVICE_TYPE_TRANSFER_VERSION_1:
-            assert (15 == itemsCount);
-            break;
-        case WK_FILE_SERVICE_TYPE_TRANSFER_VERSION_2:
-            assert (16 == itemsCount);
-            break;
-        default:
-            break;
-    }
+    assert (15 == itemsCount);
 
     char *uids     = rlpDecodeString (coder, items[ 1]);
     char *hash     = rlpDecodeString (coder, items[ 2]);
@@ -1619,69 +1700,36 @@ wkClientTransferBundleRlpDecode (BRRlpItem item,
     char *amount   = rlpDecodeString (coder, items[ 6]);
     char *currency = rlpDecodeString (coder, items[ 7]);
     char *fee      = rlpDecodeString (coder, items[ 8]);
-
-    uint64_t blockTimestamp        = rlpDecodeUInt64 (coder, items[ 9], 0);
-    uint64_t blockNumber           = rlpDecodeUInt64 (coder, items[10], 0);
-    uint64_t blockConfirmations    = rlpDecodeUInt64 (coder, items[11], 0);
-    uint64_t blockTransactionIndex = rlpDecodeUInt64 (coder, items[12], 0);
-
-    char *blockHash  = rlpDecodeString (coder, items[13]);
+    char *blkHash  = rlpDecodeString (coder, items[13]);
 
     WKTransferBundleRlpDecodeAttributesResult attributesResult =
     wkClientTransferBundleRlpDecodeAttributes (items[14], coder);
 
-    // Set the transferIndex to a default value.
-    uint64_t transferIndex = 0;
-
-    switch (version) {
-        case WK_FILE_SERVICE_TYPE_TRANSFER_VERSION_1:
-            // derive the transferIndex from the UIDS
-            if (NULL != uids) {
-                char *sepPtr = strrchr (uids, ':');    // "<network>:<hash>:<index>" for Blockset only!
-
-                if (NULL != sepPtr) {
-                    char *endPtr = NULL;
-                    unsigned long value = strtoul (sepPtr + 1, &endPtr, 10);
-
-                    if ('\0' == endPtr[0])
-                        transferIndex = (uint64_t) value;
-                }
-            }
-            break;
-        case WK_FILE_SERVICE_TYPE_TRANSFER_VERSION_2:
-            transferIndex = rlpDecodeUInt64 (coder, items[15], 0);
-            break;
-        default:
-            break;
-    }
-
     WKClientTransferBundle bundle =
     wkClientTransferBundleCreate ((WKTransferStateType) rlpDecodeUInt64 (coder, items[ 0], 0),
-                                  hash,
-                                  ident,
-                                  uids,
-                                  from,
-                                  to,
-                                  amount,
-                                  currency,
-                                  (0 == strcmp(fee,"") ? NULL : fee),
-                                  transferIndex,
-                                  blockTimestamp,
-                                  blockNumber,
-                                  blockConfirmations,
-                                  blockTransactionIndex,
-                                  blockHash,
-                                  array_count(attributesResult.keys),
-                                  (const char **) attributesResult.keys,
-                                  (const char **) attributesResult.vals);
+                                      uids,
+                                      hash,
+                                      ident,
+                                      from,
+                                      to,
+                                      amount,
+                                      currency,
+                                      (0 == strcmp(fee,"") ? NULL : fee),
+                                      rlpDecodeUInt64 (coder, items[ 9], 0),
+                                      rlpDecodeUInt64 (coder, items[10], 0),
+                                      rlpDecodeUInt64 (coder, items[11], 0),
+                                      rlpDecodeUInt64 (coder, items[12], 0),
+                                      blkHash,
+                                      array_count(attributesResult.keys),
+                                      (const char **) attributesResult.keys,
+                                      (const char **) attributesResult.vals);
 
-    free (blockHash);
+    free (blkHash);
     free (fee);
     free (currency);
     free (amount);
     free (to);
     free (from);
-    free (ident);
     free (uids);
     free (hash);
 
@@ -2026,4 +2074,16 @@ extern void
 wkClientAnnounceCurrenciesFailure (WKSystem system,
                                    WKClientError error) {
     return;
+}
+
+extern void
+wkClientAnnounceCurrencies (WKSystem system,
+                                OwnershipGiven WKClientCurrencyBundle *bundles,
+                                size_t bundlesCount) {
+    BRArrayOf(WKClientCurrencyBundle) bundlesAsArray;
+    array_new (bundlesAsArray, bundlesCount);
+    array_add_array(bundlesAsArray, bundles, bundlesCount);
+
+    wkSystemHandleCurrencyBundles (system, bundlesAsArray);
+    array_free (bundlesAsArray);
 }
