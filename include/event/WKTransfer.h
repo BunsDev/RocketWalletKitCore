@@ -179,6 +179,9 @@ typedef struct {
 } WKTransferSubmitError;
 
 extern WKTransferSubmitError
+wkTransferSubmitErrorUnknown(void);
+
+extern WKTransferSubmitError
 wkTransferSubmitErrorCreate (WKTransferSubmitErrorType type, const char *details);
 
 extern const char *
@@ -222,18 +225,20 @@ wkTransferStateIncludedInit (uint64_t blockNumber,
                              uint64_t transactionIndex,
                              uint64_t timestamp,
                              OwnershipKept WKFeeBasis feeBasis,
-                             WKTransferIncludeStatus status);
+                             WKBoolean success,
+                             const char *error);
 
 extern WKTransferState  // Does not require wkTransferStateRelease
 wkTransferStateErroredInit (WKTransferSubmitError error);
 
 extern bool
 wkTransferStateExtractIncluded (WKTransferState state,
-                                uint64_t *blockNumber,
-                                uint64_t *blockTimestamp,
-                                uint64_t *transactionIndex,
-                                WKFeeBasis *feeBasis,
-                                WKTransferIncludeStatus *status);
+                                        uint64_t *blockNumber,
+                                        uint64_t *blockTimestamp,
+                                        uint64_t *transactionIndex,
+                                        WKFeeBasis *feeBasis,
+                                        WKBoolean  *success,
+                                        char **error);
 
 extern bool
 wkTransferStateExtractError (WKTransferState state,
