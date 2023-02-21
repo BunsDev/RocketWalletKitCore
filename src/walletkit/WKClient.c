@@ -1183,8 +1183,7 @@ extern void
 wkClientQRYEstimateTransferFee (WKClientQRYManager qry,
                                     WKCookie   cookie,
                                     OwnershipKept WKTransfer transfer,
-                                    OwnershipKept WKNetworkFee networkFee,
-                                    OwnershipKept WKFeeBasis initialFeeBasis) {
+                                    OwnershipKept WKNetworkFee networkFee) {
     WKWalletManager manager = wkWalletManagerTakeWeak(qry->manager);
     if (NULL == manager) return;
 
@@ -1199,11 +1198,12 @@ wkClientQRYEstimateTransferFee (WKClientQRYManager qry,
     size_t rid = qry->requestId++;
     pthread_mutex_unlock (&qry->lock);
 
+    // Provide the transfer itself.
     WKClientCallbackState callbackState = wkClientCallbackStateCreateEstimateTransactionFee (hash,
-                                                                                                       cookie,
-                                                                                                       networkFee,
-                                                                                                       initialFeeBasis,
-                                                                                                       rid);
+                                                                                             cookie,
+                                                                                             transfer,     // taken
+                                                                                             networkFee,   // taken
+                                                                                             rid);
 
     qry->client.funcEstimateTransactionFee (qry->client.context,
                                             wkWalletManagerTake(manager),
@@ -1211,6 +1211,8 @@ wkClientQRYEstimateTransferFee (WKClientQRYManager qry,
                                             serialization,
                                             serializationCount,
                                             hashAsHex);
+
+    free (serialization);
 }
 
 // MARK: - Transfer Bundle

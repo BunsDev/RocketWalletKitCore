@@ -380,8 +380,7 @@ extern void
 wkClientQRYEstimateTransferFee (WKClientQRYManager qry,
                                     WKCookie   cookie,
                                     WKTransfer transfer,
-                                    WKNetworkFee networkFee,
-                                    WKFeeBasis initialFeeBasis);
+                                    WKNetworkFee networkFee);
 
 static inline WKClientSync
 wkClientQRYManagerAsSync (WKClientQRYManager qry) {
