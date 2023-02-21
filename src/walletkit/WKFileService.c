@@ -47,7 +47,7 @@ wkFileServiceTypeTransferV1Reader (BRFileServiceContext context,
     BRRlpData  data  = (BRRlpData) { bytesCount, bytes };
     BRRlpItem  item  = rlpDataGetItem (coder, data);
 
-    WKClientTransferBundle bundle = wkClientTransferBundleRlpDecode(item, coder, WK_FILE_SERVICE_TYPE_TRANSFER_VERSION_1);
+    WKClientTransferBundle bundle = wkClientTransferBundleRlpDecode(item, coder);
 
     rlpItemRelease (coder, item);
     rlpCoderRelease(coder);
@@ -66,7 +66,7 @@ wkFileServiceTypeTransferV2Reader (BRFileServiceContext context,
     BRRlpData  data  = (BRRlpData) { bytesCount, bytes };
     BRRlpItem  item  = rlpDataGetItem (coder, data);
 
-    WKClientTransferBundle bundle = wkClientTransferBundleRlpDecode(item, coder, WK_FILE_SERVICE_TYPE_TRANSFER_VERSION_2);
+    WKClientTransferBundle bundle = wkClientTransferBundleRlpDecode(item, coder);
 
     rlpItemRelease (coder, item);
     rlpCoderRelease(coder);
