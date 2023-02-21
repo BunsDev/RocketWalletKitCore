@@ -1255,3 +1255,34 @@ wkWalletManagerRecoverFeeBasisFromFeeEstimate (WKWalletManager cwm,
                                                           attributeKeys,
                                                           attributeVals);
 }
+
+private_extern void
+wkWalletManagerAnnounceClientError (WKWalletManager manager,
+                                    OwnershipGiven WKClientError error) {
+    bool needP2PMode = false;
+
+    pthread_mutex_lock (&manager->lock);
+    if (NULL != error && WK_CLIENT_ERROR_UNAVAILABLE == wkClientErrorGetType(error)) {
+        manager->clientErrorCount += 1;
+        if (manager->clientErrorCount >= manager->clientErrorLimit) {
+            manager->clientErrorCount = 0;
+
+            if (WK_TRUE == wkNetworkSupportsSyncMode (manager->network, WK_SYNC_MODE_P2P_ONLY))
+                needP2PMode = (WK_SYNC_MODE_P2P_ONLY != manager->syncMode);
+        }
+    }
+    else manager->clientErrorCount = 0;
+    pthread_mutex_unlock (&manager->lock);
+
+    if (needP2PMode) {
+#if 0 // NOT_DECIDED_YET
+        // If we are here, we are already connected; reconnect in P2P_ONLY mode
+        wkWalletManagerDisconnect (manager);
+        wkWalletManagerSetMode    (manager, WK_SYNC_MODE_P2P_ONLY);
+        wkWalletManagerConnect    (manager, NULL);
+        wkWalletManagerSync       (manager);
+#endif
+    }
+
+    wkClientErrorRelease(error);
+}

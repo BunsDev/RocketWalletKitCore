@@ -83,7 +83,7 @@ wkTransferIncludeStatusIsEqual (const WKTransferIncludeStatus *status1,
 /// A 'Submit Error' occurs when a Transfer is submitted to a Network but a problem arises.
 /// Generally, on such an error, the transfer will never be included in the Network's blockchain;
 /// the cause of the error must be resolved, a new transfer created (signed, etc) ad submitted.
-/// 
+///
 /// Note: in the case of a 'CLIENT' error a resubmit could work.
 ///
 typedef enum {
@@ -179,9 +179,6 @@ typedef struct {
 } WKTransferSubmitError;
 
 extern WKTransferSubmitError
-wkTransferSubmitErrorUnknown(void);
-
-extern WKTransferSubmitError
 wkTransferSubmitErrorCreate (WKTransferSubmitErrorType type, const char *details);
 
 extern const char *
@@ -225,20 +222,18 @@ wkTransferStateIncludedInit (uint64_t blockNumber,
                              uint64_t transactionIndex,
                              uint64_t timestamp,
                              OwnershipKept WKFeeBasis feeBasis,
-                             WKBoolean success,
-                             const char *error);
+                             WKTransferIncludeStatus status);
 
 extern WKTransferState  // Does not require wkTransferStateRelease
 wkTransferStateErroredInit (WKTransferSubmitError error);
 
 extern bool
 wkTransferStateExtractIncluded (WKTransferState state,
-                                        uint64_t *blockNumber,
-                                        uint64_t *blockTimestamp,
-                                        uint64_t *transactionIndex,
-                                        WKFeeBasis *feeBasis,
-                                        WKBoolean  *success,
-                                        char **error);
+                                uint64_t *blockNumber,
+                                uint64_t *blockTimestamp,
+                                uint64_t *transactionIndex,
+                                WKFeeBasis *feeBasis,
+                                WKTransferIncludeStatus *status);
 
 extern bool
 wkTransferStateExtractError (WKTransferState state,

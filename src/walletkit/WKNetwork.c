@@ -296,11 +296,7 @@ wkNetworkGetConfirmationsUntilFinal (WKNetwork network) {
 extern void
 wkNetworkSetConfirmationsUntilFinal (WKNetwork network,
                                          uint32_t confirmationsUntilFinal) {
-    if (confirmationsUntilFinal < 1) {
-        network->confirmationsUntilFinal = 1;
-    } else {
-        network->confirmationsUntilFinal = confirmationsUntilFinal;
-    }
+    network->confirmationsUntilFinal = confirmationsUntilFinal;
 }
 
 extern WKCurrency
@@ -1145,4 +1141,3 @@ wkNetworkGetTypeFromName (const char *name, WKBoolean *isMainnet) {
     }
     return (WKNetworkType) WK_NETWORK_TYPE_UNKNOWN;
 }
-

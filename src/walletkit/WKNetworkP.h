@@ -190,6 +190,10 @@ wkNetworkSetHeight (WKNetwork network,
                         WKBlockNumber height);
 
 private_extern void
+wkNetworkSetConfirmationsUntilFinal (WKNetwork network,
+                                         uint32_t confirmationsUntilFinal);
+
+private_extern void
 wkNetworkAddCurrency (WKNetwork network,
                           WKCurrency currency,
                           WKUnit baseUnit,
