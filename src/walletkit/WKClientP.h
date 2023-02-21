@@ -115,7 +115,8 @@ wkClientTransferBundleRlpEncode (WKClientTransferBundle bundle,
 
 private_extern WKClientTransferBundle
 wkClientTransferBundleRlpDecode (BRRlpItem item,
-                                     BRRlpCoder coder);
+                                 BRRlpCoder coder,
+                                 WKFileServiceTransferVersion version);
 
 // For BRSet
 private_extern size_t
