@@ -18,38 +18,6 @@
 extern "C" {
 #endif
 
-//typedef enum {
-//    /// The request itself was flawed.  For example, the URL could not be built.  This error is
-//    /// an internal error and not recoverable, typically.
-//    WK_CLIENT_ERROR_BAD_REQUEST,
-//
-//    /// The request was rejected w/ invalid permission.  For example, a 'client token' has expired
-//    /// or is otherwise rejected.  This error might be recoverable is the User's permission is
-//    /// reestablished.
-//    WK_CLIENT_ERROR_PERMISSION,
-//
-//    /// The request was rejected having exceeded a resource (rateLimit, dataLimit, etc)
-//    WK_CLIENT_ERROR_RESOURCE,
-//
-//    /// The response was flawed.  For example response data could not be parsed or was expected but
-//    /// was not provided.  This might occur if the client's interface is inconsistent with the
-//    /// WalletKit interface.
-//    WK_CLIENT_ERROR_BAD_RESPONSE,
-//
-//    /// The request and response succeeded, but the submission ultimately failed.  For example,
-//    /// the Client submitted a Transaction to the Ethereum network but the submission failed with
-//    /// 'gas_too_low'
-//    WK_CLIENT_ERROR_SUBMISSION,
-//
-//    /// The client is unavailable.  For example, the client is dead or gone.  It is possible that
-//    /// the client returns and thus a retry might succeed.
-//    WK_CLIENT_ERROR_UNAVAILABLE,
-//
-//    /// The client can't be reached because network connectivity has been lost
-//    WK_CLIENT_ERROR_LOST_CONNECTIVITY,
-//
-//} WKClientErrorType;
-
 typedef enum {
     /// HTTP URL build failed
     WK_CLIENT_ERROR_URL,
