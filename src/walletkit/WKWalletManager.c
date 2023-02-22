@@ -1262,7 +1262,7 @@ wkWalletManagerAnnounceClientError (WKWalletManager manager,
     bool needP2PMode = false;
 
     pthread_mutex_lock (&manager->lock);
-    if (NULL != error && WK_CLIENT_ERROR_UNAVAILABLE == wkClientErrorGetType(error)) {
+    if (NULL != error && WK_CLIENT_ERROR_NO_DATA == wkClientErrorGetType(error)) {
         manager->clientErrorCount += 1;
         if (manager->clientErrorCount >= manager->clientErrorLimit) {
             manager->clientErrorCount = 0;
